@@ -4,7 +4,7 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Preferences;
 
-public class SparkControlConstants {
+public class ControlConstants {
     public static final NetworkTable constantPreferences = NetworkTableInstance.getDefault().getTable("Custom Robot Preferences");
     public static boolean enableNT = true;
 
@@ -20,7 +20,7 @@ public class SparkControlConstants {
     public final double kDefaultG; //kG * cos(theta)
     public final double kDefaultV; //kV * dtheta/dt
 
-    public SparkControlConstants(String name, double kDefaultP, double kDefaultI, double kDefaultD, double kDefaultV, double kDefaultG, double kDefaultS) {
+    public ControlConstants(String name, double kDefaultP, double kDefaultI, double kDefaultD, double kDefaultV, double kDefaultG, double kDefaultS) {
         this.name = name;
         this.kDefaultP = kDefaultP;
         this.kDefaultI = kDefaultI;
