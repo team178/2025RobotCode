@@ -3,6 +3,7 @@ package frc.robot;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
@@ -33,11 +34,13 @@ public class Constants {
 		public static final double kSRXMagEncoderCPR = 4096; // may be 1024 counts per revolution
 		public static final double kTurnRelPositionConversionFactor = Units.rotationsToRadians(1 / kSRXMagEncoderCPR); // radians per count (radians per revolution * revolutions per count)
 
-		public static final double kDriveGearRatio = 6.75 / 1; // rotations from input (motor) per rotations on output (wheel)
+		public static final double kDriveGearRatio = 6.75 / 1; // rotor rotations per wheel rotations
 		public static final double kInternalNEOEncoderCPR = 42 / 1; // counts on encoder counts per revolution
-		public static final double kWheelMetersPerRevolution = Units.inchesToMeters(Math.PI * 4); // meters per revolution (wheel circumference)
-		public static final double kDriveConversionFactor = kWheelMetersPerRevolution / (kDriveGearRatio * kInternalNEOEncoderCPR); // meters per count
-		public static final double kTurnAbsConversionFactor = Units.rotationsToRadians(1); // 2pi
+		public static final double kWheelRadiusMeters = Units.inchesToMeters(2); // meters per revolution (wheel circumference)
+		public static final double kDrivePositionConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio * kInternalNEOEncoderCPR); // wheel rad per rotor count
+		public static final double kDriveVelocityConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio * kInternalNEOEncoderCPR * 60); // wheel rad per second per rotor count per minute
+		public static final double kTurnPositionConversionFactor = Units.rotationsToRadians(1); // rotations -> radians
+		public static final double kTurnVelocityConversionFactor = Units.rotationsToRadians(1) / 60; // rotations per minute -> radians per second
 
 		public static final double kMaxWheelSpeed = 8; // m/s
 		public static final double kMagVelLimit = 2.5; // m/s
@@ -73,6 +76,11 @@ public class Constants {
         public static final SparkMaxConfig turnConfig = new SparkMaxConfig();
         public static final SparkMaxConfig driveConfig = new SparkMaxConfig();
 
+		public static final Rotation2d FLZeroRotation = new Rotation2d();
+		public static final Rotation2d FRZeroRotation = new Rotation2d();
+		public static final Rotation2d BLZeroRotation = new Rotation2d();
+		public static final Rotation2d BRZeroRotation = new Rotation2d();
+
 		public static final ControlConstants kTurnControlConstants = new ControlConstants(
 			"swerveModule/turn",
 			0, // 0.3
@@ -95,7 +103,7 @@ public class Constants {
 
 		public static final double kTurnRatio = 12.8 / 1; // only use when using internal encoder
 
-        public static void initMotorConfigs() {
+        static {
             turnConfig
                 .idleMode(IdleMode.kBrake)
                 .smartCurrentLimit(30)
@@ -109,8 +117,8 @@ public class Constants {
                 .positionWrappingInputRange(0, 2 * Math.PI)
                 .outputRange(-2, 2) // may change if necessary
 			; turnConfig.absoluteEncoder
-				.positionConversionFactor(SwerveConstants.kTurnAbsConversionFactor)
-				.velocityConversionFactor(SwerveConstants.kTurnAbsConversionFactor)
+				.positionConversionFactor(SwerveConstants.kTurnPositionConversionFactor)
+				.velocityConversionFactor(SwerveConstants.kTurnVelocityConversionFactor)
 			;
 
             driveConfig
@@ -125,8 +133,8 @@ public class Constants {
 				.velocityFF(kDriveControlConstants.kV())
                 .outputRange(-2, 2) // may change if necessary
             ; driveConfig.encoder
-				.positionConversionFactor(SwerveConstants.kDriveConversionFactor)
-				.velocityConversionFactor(SwerveConstants.kDriveConversionFactor)
+				.positionConversionFactor(SwerveConstants.kDrivePositionConversionFactor)
+				.velocityConversionFactor(SwerveConstants.kDriveVelocityConversionFactor)
 			;
         }
 	}
