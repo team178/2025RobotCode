@@ -89,7 +89,7 @@ public class SDSModuleIOSpark implements SDSModuleIO {
         turnControlller.setReference(setpoint, ControlType.kPosition);
     }
 
-    public void setDriveVelocity(double velocityRadPerSec) {
+    public void setDriveVelocityRadPerSec(double velocityRadPerSec) {
         driveController.setReference(velocityRadPerSec, ControlType.kVelocity);
     }
 

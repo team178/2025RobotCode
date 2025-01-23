@@ -30,7 +30,7 @@ public interface SDSModuleIO {
     public default void setTurnPosition(Rotation2d position) {}
 
     /** Set drive velocity setpoint */
-    public default void setDriveVelocity(double velocity) {}
+    public default void setDriveVelocityRadPerSec(double velocityRadPerSec) {}
 
     /** Run turn motor at specified open loop value. */
     public default void setTurnOpenLoop(double output) {}
