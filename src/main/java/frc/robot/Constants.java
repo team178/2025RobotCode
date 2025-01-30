@@ -7,10 +7,33 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Preferences;
+import edu.wpi.first.wpilibj.RobotBase;
 import frc.robot.util.ControlConstants;
 
 public class Constants {
+	public static enum RobotMode {
+		/** Running on a real robot. */
+		REAL,
+	
+		/** Running a physics simulator. */
+		SIM,
+	
+		/** Replaying from a log file. */
+		REPLAY;
+	}
+	public static final RobotMode simMode = RobotMode.SIM;
+	public static final RobotMode currentMode = RobotBase.isReal() ? RobotMode.REAL : simMode;
+
+	/** 
+	 * Usually red means some calculations are flipped
+	 */
+	public static boolean isRed() {
+		return DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == Alliance.Red;
+	}
+	
     public static class SwerveConstants { // all swerve on CAN ID range 1-9
 		public static final double kWheelDistanceMeters = Units.inchesToMeters(19.625); //! TO BE DETERMINED
 		
@@ -21,11 +44,11 @@ public class Constants {
 		public static final int kFRDriveCANID = 2;
 		public static final int kFRTurnCANID = 6;
 
-		public static final int kBLDriveCANID = 4;
-		public static final int kBLTurnCANID = 8;
+		public static final int kBLDriveCANID = 3;
+		public static final int kBLTurnCANID = 7;
 
-		public static final int kBRDriveCANID = 3;
-		public static final int kBRTurnCANID = 7;
+		public static final int kBRDriveCANID = 4;
+		public static final int kBRTurnCANID = 8;
 
 		public static final int kPigeonCANID = 9; // this needs to be checked too
 
@@ -59,19 +82,13 @@ public class Constants {
 		public static final double kDefaultTestTurn = 0;
 		public static final double kDefaultTestDrive = 0;
 
-		public static void initSwerveDrivePreferences() {
+		static {
 			Preferences.initDouble("kSwerveTestTurn", kDefaultTestTurn);
 			Preferences.initDouble("kSwerveTestDrive", kDefaultTestDrive);
-			System.out.println("Swerve preferences initialized");
-		}
-
-		public static void setSwerveDrivePreferences() {
-			Preferences.setDouble("kSwerveTestTurn", kDefaultTestTurn);
-			Preferences.setDouble("kSwerveTestDrive", kDefaultTestDrive);
+			System.out.println("SwerveConstants initialized");
 		}
 	}
     
-
 	public static class SwerveModuleConstants {
         public static final SparkMaxConfig turnConfig = new SparkMaxConfig();
         public static final SparkMaxConfig driveConfig = new SparkMaxConfig();
@@ -83,7 +100,7 @@ public class Constants {
 
 		public static final ControlConstants kTurnControlConstants = new ControlConstants(
 			"swerveModule/turn",
-			0, // 0.3
+			0.3, // 0.3
 			0, // 0, used 0.0001 in the past
 			0,
 			0,
@@ -93,10 +110,10 @@ public class Constants {
 
 		public static final ControlConstants kDriveControlConstants = new ControlConstants(
 			"swerveModule/drive",
-			0, // 0.01
+			0.01, // 0.01
 			0, // 0, used 0.0001 in the past
 			0,
-			0, // 0.145
+			0.145, // 0.145
             0,
             0
 		);
@@ -136,6 +153,12 @@ public class Constants {
 				.positionConversionFactor(SwerveConstants.kDrivePositionConversionFactor)
 				.velocityConversionFactor(SwerveConstants.kDriveVelocityConversionFactor)
 			;
+			System.out.println("SwerveModuleConstants initialized");
         }
+	}
+
+	public static class OperatorConstants {
+		public static final int kDriverControllerPort = 0;
+		public static final int kAuxControllerPort = 1;
 	}
 }

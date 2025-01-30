@@ -54,6 +54,11 @@ public class SDSSwerveModule {
         return new SwerveModuleState(0, desiredModuleState.angle);
     }
 
+    public void openLoop(double turn, double drive) {
+        io.setTurnOpenLoop(turn);
+        io.setDriveOpenLoop(drive);
+    }
+
     public void stopDrive() {
         io.setTurnOpenLoop(0);
         io.setDriveOpenLoop(0);
@@ -97,6 +102,6 @@ public class SDSSwerveModule {
     public void periodic() {
         putInfo();
         io.updateInputs(inputs);
-        Logger.processInputs("Swerve/Module" + index + ".", inputs);
+        Logger.processInputs("Swerve/Module" + index, inputs);
     }
 }

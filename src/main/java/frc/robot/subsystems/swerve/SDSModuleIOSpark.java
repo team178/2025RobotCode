@@ -29,7 +29,7 @@ public class SDSModuleIOSpark implements SDSModuleIO {
 
     private Rotation2d zeroRotation;
 
-    public SDSModuleIOSpark(int module, boolean useAbsolute) {
+    public SDSModuleIOSpark(int module) {
         turnMotor = new SparkMax(
             switch(module) {
                 case 0 -> SwerveConstants.kFLTurnCANID;
@@ -68,6 +68,9 @@ public class SDSModuleIOSpark implements SDSModuleIO {
         turnEncoder = turnMotor.getAbsoluteEncoder();
         driveEncoder = driveMotor.getEncoder();
 
+        turnControlller = turnMotor.getClosedLoopController();
+        driveController = driveMotor.getClosedLoopController();
+
         turnMotor.configure(turnConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         driveMotor.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
@@ -81,7 +84,7 @@ public class SDSModuleIOSpark implements SDSModuleIO {
         inputs.drivePositionRad = driveEncoder.getPosition();
         inputs.driveVelocityRadPerSec = driveEncoder.getVelocity();
         inputs.turnAppliedVolts = driveMotor.getAppliedOutput() * driveMotor.getBusVoltage();
-        inputs.turnCurrentAmps = driveMotor. getOutputCurrent();
+        inputs.turnCurrentAmps = driveMotor.getOutputCurrent();
     }
 
     public void setTurnPosition(Rotation2d position) {
@@ -117,7 +120,7 @@ public class SDSModuleIOSpark implements SDSModuleIO {
             .velocityFF(SwerveModuleConstants.kDriveControlConstants.kV())
         ;
 
-        turnMotor.configure(turnConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        driveMotor.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        turnMotor.configure(turnConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
+        driveMotor.configure(driveConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
     }
 }
