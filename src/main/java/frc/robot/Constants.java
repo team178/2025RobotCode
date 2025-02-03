@@ -35,7 +35,7 @@ public class Constants {
 	}
 	
     public static class SwerveConstants { // all swerve on CAN ID range 1-9
-		public static final double kWheelDistanceMeters = Units.inchesToMeters(19.625); //! TO BE DETERMINED
+		public static final double kWheelDistanceMeters = Units.inchesToMeters(20);
 		
         // F = Front, B = Back, L = Left, R = Right
 		public static final int kFLDriveCANID = 1;
@@ -57,9 +57,9 @@ public class Constants {
 		public static final double kSRXMagEncoderCPR = 4096; // may be 1024 counts per revolution
 		public static final double kTurnRelPositionConversionFactor = Units.rotationsToRadians(1 / kSRXMagEncoderCPR); // radians per count (radians per revolution * revolutions per count)
 
-		public static final double kDriveGearRatio = 6.75 / 1; // rotor rotations per wheel rotations
+		public static final double kDriveGearRatio = 6.12 / 1; // rotor rotations per wheel rotations
 		public static final double kInternalNEOEncoderCPR = 42 / 1; // counts on encoder counts per revolution
-		public static final double kWheelRadiusMeters = Units.inchesToMeters(2); // meters per revolution (wheel circumference)
+		public static final double kWheelRadiusMeters = Units.inchesToMeters(3.75 / 2); // meters per revolution (wheel circumference)
 		public static final double kDrivePositionConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio * kInternalNEOEncoderCPR); // wheel rad per rotor count
 		public static final double kDriveVelocityConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio * kInternalNEOEncoderCPR * 60); // wheel rad per second per rotor count per minute
 		public static final double kTurnPositionConversionFactor = Units.rotationsToRadians(1); // rotations -> radians
