@@ -59,11 +59,11 @@ public class Constants {
 
 		public static final double kDriveGearRatio = 6.12 / 1; // rotor rotations per wheel rotations
 		public static final double kInternalNEOEncoderCPR = 42 / 1; // counts on encoder counts per revolution
-		public static final double kWheelRadiusMeters = Units.inchesToMeters(3.75 / 2); // meters per revolution (wheel circumference)
+		public static final double kWheelRadiusMeters = Units.inchesToMeters(4 / 2); // meters per revolution (wheel circumference)
 		public static final double kDrivePositionConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio * kInternalNEOEncoderCPR); // wheel rad per rotor count
-		public static final double kDriveVelocityConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio * kInternalNEOEncoderCPR * 60); // wheel rad per second per rotor count per minute
+		public static final double kDriveVelocityConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio * kInternalNEOEncoderCPR); // wheel rad per second  per  rotor count per second
 		public static final double kTurnPositionConversionFactor = Units.rotationsToRadians(1); // rotations -> radians
-		public static final double kTurnVelocityConversionFactor = Units.rotationsToRadians(1) / 60; // rotations per minute -> radians per second
+		public static final double kTurnVelocityConversionFactor = Units.rotationsToRadians(1); // rotations per second -> radians per second (not minutes?)
 
 		public static final double kMaxWheelSpeed = 8; // m/s
 		public static final double kMagVelLimit = 2.5; // m/s
@@ -110,12 +110,12 @@ public class Constants {
 
 		public static final ControlConstants kDriveControlConstants = new ControlConstants(
 			"swerveModule/drive",
-			0.01, // 0.01
+			0.00009, // 0.01
 			0, // 0, used 0.0001 in the past
 			0,
-			0.145, // 0.145
+			0.0069, // 0.145
             0,
-            0
+            0.11
 		);
 
 		public static final double kTurnRatio = 12.8 / 1; // only use when using internal encoder

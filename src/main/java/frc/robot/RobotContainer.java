@@ -55,6 +55,8 @@ public class RobotContainer {
     private void configureBindings() {
         driverController.a().onTrue(swerve.runTestDrive());
         driverController.a().onFalse(swerve.runStopDrive());
+        driverController.x().onTrue(swerve.runOpenTestDrive());
+        driverController.x().onFalse(swerve.runStopDrive());
         driverController.b().onTrue(swerve.runUpdateControlConstants());
     }
 

@@ -63,6 +63,10 @@ public class MotorPID implements Sendable, AutoCloseable {
   private boolean m_haveMeasurement;
   private boolean m_haveSetpoint;
 
+  public MotorPID(ControlConstants constants) {
+    this(constants.kP(), constants.kI(), constants.kD());
+  }
+
   /**
    * Allocates a PIDController with the given constants for kp, ki, and kd and a default period of
    * 0.02 seconds.

@@ -1,10 +1,12 @@
 package frc.robot.subsystems.swerve;
 
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkAbsoluteEncoder;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
+import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 import com.revrobotics.spark.SparkMax;
@@ -83,6 +85,7 @@ public class SDSModuleIOSpark implements SDSModuleIO {
         
         inputs.drivePositionRad = driveEncoder.getPosition();
         inputs.driveVelocityRadPerSec = driveEncoder.getVelocity();
+        inputs.driveVelocityWheelMetersPerSec = inputs.driveVelocityRadPerSec * SwerveConstants.kWheelRadiusMeters;
         inputs.turnAppliedVolts = driveMotor.getAppliedOutput() * driveMotor.getBusVoltage();
         inputs.turnCurrentAmps = driveMotor.getOutputCurrent();
     }
@@ -93,7 +96,8 @@ public class SDSModuleIOSpark implements SDSModuleIO {
     }
 
     public void setDriveVelocityRadPerSec(double velocityRadPerSec) {
-        driveController.setReference(velocityRadPerSec, ControlType.kVelocity);
+        double ffVolts = Math.signum(velocityRadPerSec) * SwerveModuleConstants.kDriveControlConstants.kS();
+        driveController.setReference(velocityRadPerSec, ControlType.kVelocity, ClosedLoopSlot.kSlot0, ffVolts, ArbFFUnits.kVoltage);
     }
 
     public void setTurnOpenLoop(double output) {

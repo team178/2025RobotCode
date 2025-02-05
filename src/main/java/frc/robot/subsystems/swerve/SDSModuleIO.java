@@ -16,6 +16,7 @@ public interface SDSModuleIO {
         
         public double drivePositionRad = 0;
         public double driveVelocityRadPerSec = 0;
+        public double driveVelocityWheelMetersPerSec = 0;
         
         public double driveAppliedVolts = 0;
         public double driveCurrentAmps = 0;

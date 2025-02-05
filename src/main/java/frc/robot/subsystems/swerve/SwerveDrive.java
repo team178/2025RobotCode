@@ -185,6 +185,26 @@ public class SwerveDrive extends SubsystemBase {
             // }
         });
     }
+
+    public Command runOpenTestDrive() {
+        return runOnce(() -> {
+            SwerveModuleState testSwerveState = new SwerveModuleState(Preferences.getDouble("kSwerveTestDrive", SwerveConstants.kDefaultTestDrive),
+                new Rotation2d(Preferences.getDouble("kSwerveTestTurn", SwerveConstants.kDefaultTestTurn))
+            );
+            double drive = testSwerveState.speedMetersPerSecond;
+            double turn = testSwerveState.angle.getRadians();
+            modules[0].openLoop(turn, drive);
+            modules[1].openLoop(turn, drive);
+            modules[2].openLoop(turn, drive);
+            modules[3].openLoop(turn, drive);
+            // for(SDSSwerveModule module : modules) {
+            //     module.openLoop(
+            //         Preferences.getDouble("kSwerveTestTurn", SwerveConstants.kDefaultTestTurn),
+            //         Preferences.getDouble("kSwerveTestDrive", SwerveConstants.kDefaultTestDrive)
+            //     );
+            // }
+        });
+    }
     
     public Command runStopDrive() {
         return runOnce(() -> {
