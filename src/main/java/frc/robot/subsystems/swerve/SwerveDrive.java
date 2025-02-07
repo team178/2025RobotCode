@@ -76,11 +76,11 @@ public class SwerveDrive extends SubsystemBase {
 
         rawGyroRotation = new Rotation2d();
         modulePositions = Arrays.stream(modules).map(module -> module.getPosition()).toArray(SwerveModulePosition[]::new);
-        kinematics = new SwerveDriveKinematics(
-            new Translation2d(-SwerveConstants.kWheelDistanceMeters / 2,  SwerveConstants.kWheelDistanceMeters / 2), // FL
-            new Translation2d( SwerveConstants.kWheelDistanceMeters / 2,  SwerveConstants.kWheelDistanceMeters / 2), // FR
-            new Translation2d(-SwerveConstants.kWheelDistanceMeters / 2, -SwerveConstants.kWheelDistanceMeters / 2), // BL
-            new Translation2d( SwerveConstants.kWheelDistanceMeters / 2, -SwerveConstants.kWheelDistanceMeters / 2)  // BR
+        kinematics = new SwerveDriveKinematics( // NWU coordinate system
+            new Translation2d( SwerveConstants.kWheelDistanceMeters / 2,  SwerveConstants.kWheelDistanceMeters / 2), // FL
+            new Translation2d( SwerveConstants.kWheelDistanceMeters / 2, -SwerveConstants.kWheelDistanceMeters / 2), // FR
+            new Translation2d(-SwerveConstants.kWheelDistanceMeters / 2,  SwerveConstants.kWheelDistanceMeters / 2), // BL
+            new Translation2d(-SwerveConstants.kWheelDistanceMeters / 2, -SwerveConstants.kWheelDistanceMeters / 2)  // BR
         );
         poseEstimator = new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, modulePositions, new Pose2d());
     }
@@ -117,7 +117,7 @@ public class SwerveDrive extends SubsystemBase {
             double steepness = 1.8; // power to raise input (which is on interval [-1, 1], so reduces lower values)
 
             // apply drive filters (negatives based on last year)
-            double vx = adjustAxisInput(xInput.getAsDouble(), deadband, minThreshold, steepness);
+            double vx = adjustAxisInput(-xInput.getAsDouble(), deadband, minThreshold, steepness);
             double vy = adjustAxisInput(-yInput.getAsDouble(), deadband, minThreshold, steepness);
             double omega = adjustAxisInput(-omegaInput.getAsDouble(), deadband, minThreshold, steepness);
 
@@ -135,6 +135,7 @@ public class SwerveDrive extends SubsystemBase {
             Math.sqrt(1 + Math.pow(Math.sin(dir), 2)),
             Math.sqrt(1 + Math.pow(Math.cos(dir), 2))
         );
+        omega *= SwerveConstants.kRotVelLimit;
 
         ChassisSpeeds chassisSpeeds = new ChassisSpeeds(mag * Math.cos(dir), mag * Math.sin(dir), omega);
         runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);

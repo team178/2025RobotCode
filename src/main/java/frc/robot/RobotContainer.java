@@ -29,6 +29,7 @@ public class RobotContainer {
 
         switch(Constants.currentMode) {
             case REAL:
+            case SIM: // no sim classes for now
                 swerve = new SwerveDrive(
                     new Pigeon2IO(),
                     // new GyroIO() {},
@@ -38,7 +39,6 @@ public class RobotContainer {
                     new SDSModuleIOSpark(3)
                 );
                 break;
-            case SIM:
             default:
                 swerve = new SwerveDrive(
                     new GyroIO() {},
@@ -53,6 +53,14 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
+        swerve.setDefaultCommand(swerve.runDriveInputs(
+            driverController::getLeftY,
+            driverController::getLeftX,
+            driverController::getRightX,
+            driverController.leftBumper()::getAsBoolean,
+            driverController.leftTrigger()::getAsBoolean
+        ));
+
         driverController.a().onTrue(swerve.runTestDrive());
         driverController.a().onFalse(swerve.runStopDrive());
         driverController.x().onTrue(swerve.runOpenTestDrive());
