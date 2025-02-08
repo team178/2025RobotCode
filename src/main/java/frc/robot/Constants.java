@@ -1,6 +1,7 @@
 package frc.robot;
 
 import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -98,7 +99,7 @@ public class Constants {
 		public static final Rotation2d BLZeroRotation = new Rotation2d();
 		public static final Rotation2d BRZeroRotation = new Rotation2d();
 
-		public static final ControlConstants kTurnControlConstants = new ControlConstants(
+		public static final ControlConstants turnControlConstants = new ControlConstants(
 			"swerveModule/turn",
 			0.3, // 0.3
 			0, // 0, used 0.0001 in the past
@@ -108,7 +109,7 @@ public class Constants {
             0
 		);
 
-		public static final ControlConstants kDriveControlConstants = new ControlConstants(
+		public static final ControlConstants driveControlConstants = new ControlConstants(
 			"swerveModule/drive",
 			0.00009, // 0.01
 			0, // 0, used 0.0001 in the past
@@ -118,21 +119,19 @@ public class Constants {
             0.11
 		);
 
-		public static final double kTurnRatio = 12.8 / 1; // only use when using internal encoder
-
         static {
             turnConfig
                 .idleMode(IdleMode.kBrake)
                 .smartCurrentLimit(30)
-                .voltageCompensation(12) // probably good voltage compensation
-                .closedLoopRampRate(0) // set if needed
+                .voltageCompensation(12)
 			; turnConfig.closedLoop
-                .p(kTurnControlConstants.kP())
-                .i(kTurnControlConstants.kI())
-                .d(kTurnControlConstants.kD())
+				.feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
+                .p(turnControlConstants.kP())
+                .i(turnControlConstants.kI())
+                .d(turnControlConstants.kD())
                 .positionWrappingEnabled(true)
                 .positionWrappingInputRange(0, 2 * Math.PI)
-                .outputRange(-2, 2) // may change if necessary
+                .outputRange(-1, 1)
 			; turnConfig.absoluteEncoder
 				.positionConversionFactor(SwerveConstants.kTurnPositionConversionFactor)
 				.velocityConversionFactor(SwerveConstants.kTurnVelocityConversionFactor)
@@ -141,20 +140,154 @@ public class Constants {
             driveConfig
                 .idleMode(IdleMode.kBrake)
                 .smartCurrentLimit(30)
-                .voltageCompensation(12) // probably good voltage compensation
-                .closedLoopRampRate(0) // set if needed
+                .voltageCompensation(12)
             ; driveConfig.closedLoop
-                .p(kDriveControlConstants.kP())
-                .i(kDriveControlConstants.kI())
-                .d(kDriveControlConstants.kD())
-				.velocityFF(kDriveControlConstants.kV())
-                .outputRange(-2, 2) // may change if necessary
+                .p(driveControlConstants.kP())
+                .i(driveControlConstants.kI())
+                .d(driveControlConstants.kD())
+				.velocityFF(driveControlConstants.kV())
+                .outputRange(-1, 1)
             ; driveConfig.encoder
 				.positionConversionFactor(SwerveConstants.kDrivePositionConversionFactor)
 				.velocityConversionFactor(SwerveConstants.kDriveVelocityConversionFactor)
 			;
 			System.out.println("SwerveModuleConstants initialized");
         }
+	}
+
+	public static class ElevatorConstants { // CAN ID range 11-14
+		public static final int kMotorCANID = 11;
+		public static final int kFollowerCANID = 12;
+		
+		public static final int kLowerLimitDIO = 1;
+		public static final int kUpperLimitDIO = 2;
+
+		public static final double kBeltWheelDiameter = Units.inchesToMeters(2); // meters
+		public static final double kPositionConversionFactor = kBeltWheelDiameter * Math.PI;
+
+		public static final ControlConstants elevatorControlConstants = new ControlConstants(
+			"elevator",
+			0.0001, // to test
+			0,
+			0,
+			0,
+			0,
+			0
+		);
+
+		public static final SparkMaxConfig motorConfig = new SparkMaxConfig();
+		public static final SparkMaxConfig followerConfig = new SparkMaxConfig();
+
+		static {
+			motorConfig
+				.idleMode(IdleMode.kBrake)
+				.smartCurrentLimit(30)
+				.voltageCompensation(12)
+			; motorConfig.closedLoop
+				.feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
+				.p(elevatorControlConstants.kP())
+				.i(elevatorControlConstants.kI())
+				.d(elevatorControlConstants.kD())
+				.outputRange(-0.5, 0.5)
+			; motorConfig.absoluteEncoder
+				.positionConversionFactor(kPositionConversionFactor)
+				.velocityConversionFactor(kPositionConversionFactor)
+			;
+
+			followerConfig
+				.follow(kMotorCANID)
+				.idleMode(IdleMode.kBrake)
+				.smartCurrentLimit(30)
+				.voltageCompensation(12)
+			;
+		}
+	}
+
+	public static class EffectorConstants { // CAN ID range 15-19
+		public static final int kLeftMotorCANID = 15;
+		public static final int kRightMotorCANID = 16;
+
+		public static final int kHighPhotosensorDIO = 3;
+		public static final int kLowPhotosensorDIO = 4;
+
+		public static final double kNEOCPR = 4096; // might be 1024, test
+		public static final double kPositionConversionFactor = kNEOCPR; // counts to revolutions
+
+		public static final SparkMaxConfig effectorConfig = new SparkMaxConfig();
+
+		static {
+            effectorConfig
+                .idleMode(IdleMode.kBrake)
+                .smartCurrentLimit(30)
+                .voltageCompensation(12)
+            ; effectorConfig.encoder
+				.positionConversionFactor(kPositionConversionFactor)
+				.velocityConversionFactor(kPositionConversionFactor)
+			;
+		}
+	}
+
+	public static class ManipulatorConstants { // CAN ID range 21-24
+		public static final int kDeployMotorCANID = 21;
+		public static final int kRollerMotorCANID = 22;
+
+		public static final int kPhotosensorDIO = 5;
+
+		public static final double kNEOCPR = 4096; // might be 1024, test
+		public static final double kPositionConversionFactor = kNEOCPR; // counts to revolutions
+
+		public static final ControlConstants deployControlConstants = new ControlConstants(
+			"manipulator",
+			0.0001, // to test
+			0,
+			0,
+			0,
+			0,
+			0
+		);
+
+		public static final SparkMaxConfig deployConfig = new SparkMaxConfig();
+		public static final SparkMaxConfig rollerConfig = new SparkMaxConfig();
+
+		static {
+			deployConfig
+				.idleMode(IdleMode.kBrake)
+				.smartCurrentLimit(30)
+				.voltageCompensation(12)
+			; deployConfig.closedLoop
+				.feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
+				.p(deployControlConstants.kP())
+				.i(deployControlConstants.kI())
+				.d(deployControlConstants.kD())
+				.outputRange(-1, 1)
+			; deployConfig.absoluteEncoder
+				.positionConversionFactor(Units.rotationsToDegrees(1))
+				.velocityConversionFactor(Units.rotationsToDegrees(1))
+			;
+
+			rollerConfig
+				.idleMode(IdleMode.kBrake)
+				.smartCurrentLimit(30)
+				.voltageCompensation(12)
+			; rollerConfig.encoder
+				.positionConversionFactor(kPositionConversionFactor)
+				.velocityConversionFactor(kPositionConversionFactor)
+			;
+		}
+	}
+
+	public static class ClimberConstants { // CAN ID range 25-29
+		public static final int kClimberMotorCANID = 25;
+
+		public static final SparkMaxConfig climberConfig = new SparkMaxConfig();
+
+		static {
+			climberConfig
+				.idleMode(IdleMode.kBrake)
+				.smartCurrentLimit(30)
+				.voltageCompensation(12)
+			;
+		}
 	}
 
 	public static class OperatorConstants {

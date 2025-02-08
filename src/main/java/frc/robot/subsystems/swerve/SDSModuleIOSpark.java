@@ -61,8 +61,6 @@ public class SDSModuleIOSpark implements SDSModuleIO {
         SparkMaxConfig turnConfig = Constants.SwerveModuleConstants.turnConfig;
         SparkMaxConfig driveConfig = Constants.SwerveModuleConstants.driveConfig;
 
-        turnConfig.closedLoop.feedbackSensor(FeedbackSensor.kAbsoluteEncoder); // JUST GOTTA HOPE THIS ATTACHES TO THE ABSOLUTE ENCODER CORRECTLY (changed from last year)
-
         // likely disables CAN timeout, likely helpful, seen in other teams' code
         turnMotor.setCANTimeout(0);
         driveMotor.setCANTimeout(0);
@@ -77,6 +75,7 @@ public class SDSModuleIOSpark implements SDSModuleIO {
         driveMotor.configure(driveConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
     
+    @Override
     public void updateInputs(SDSModuleIOInputs inputs) {
         inputs.turnPosition = new Rotation2d(turnEncoder.getPosition()).minus(zeroRotation);
         inputs.turnVelocityRadPerSec = turnEncoder.getVelocity();
@@ -90,20 +89,24 @@ public class SDSModuleIOSpark implements SDSModuleIO {
         inputs.turnCurrentAmps = driveMotor.getOutputCurrent();
     }
 
+    @Override
     public void setTurnPosition(Rotation2d position) {
         double setpoint = MathUtil.inputModulus(position.rotateBy(zeroRotation).getRadians(), 0, 2 * Math.PI);
         turnControlller.setReference(setpoint, ControlType.kPosition);
     }
 
+    @Override
     public void setDriveVelocityRadPerSec(double velocityRadPerSec) {
-        double ffVolts = Math.signum(velocityRadPerSec) * SwerveModuleConstants.kDriveControlConstants.kS();
+        double ffVolts = Math.signum(velocityRadPerSec) * SwerveModuleConstants.driveControlConstants.kS();
         driveController.setReference(velocityRadPerSec, ControlType.kVelocity, ClosedLoopSlot.kSlot0, ffVolts, ArbFFUnits.kVoltage);
     }
 
+    @Override
     public void setTurnOpenLoop(double output) {
         turnMotor.setVoltage(output);
     }
 
+    @Override
     public void setDriveOpenLoop(double output) {
         driveMotor.setVoltage(output);
     }
@@ -114,14 +117,14 @@ public class SDSModuleIOSpark implements SDSModuleIO {
         SparkMaxConfig driveConfig = new SparkMaxConfig();
 
         turnConfig.closedLoop
-            .p(SwerveModuleConstants.kTurnControlConstants.kP())
-            .i(SwerveModuleConstants.kTurnControlConstants.kI())
-            .d(SwerveModuleConstants.kTurnControlConstants.kD())
+            .p(SwerveModuleConstants.turnControlConstants.kP())
+            .i(SwerveModuleConstants.turnControlConstants.kI())
+            .d(SwerveModuleConstants.turnControlConstants.kD())
         ; driveConfig.closedLoop
-            .p(SwerveModuleConstants.kDriveControlConstants.kP())
-            .i(SwerveModuleConstants.kDriveControlConstants.kI())
-            .d(SwerveModuleConstants.kDriveControlConstants.kD())
-            .velocityFF(SwerveModuleConstants.kDriveControlConstants.kV())
+            .p(SwerveModuleConstants.driveControlConstants.kP())
+            .i(SwerveModuleConstants.driveControlConstants.kI())
+            .d(SwerveModuleConstants.driveControlConstants.kD())
+            .velocityFF(SwerveModuleConstants.driveControlConstants.kV())
         ;
 
         turnMotor.configure(turnConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
