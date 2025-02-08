@@ -85,8 +85,8 @@ public class SDSModuleIOSpark implements SDSModuleIO {
         inputs.drivePositionRad = driveEncoder.getPosition();
         inputs.driveVelocityRadPerSec = driveEncoder.getVelocity();
         inputs.driveVelocityWheelMetersPerSec = inputs.driveVelocityRadPerSec * SwerveConstants.kWheelRadiusMeters;
-        inputs.turnAppliedVolts = driveMotor.getAppliedOutput() * driveMotor.getBusVoltage();
-        inputs.turnCurrentAmps = driveMotor.getOutputCurrent();
+        inputs.driveAppliedVolts = driveMotor.getAppliedOutput() * driveMotor.getBusVoltage();
+        inputs.driveCurrentAmps = driveMotor.getOutputCurrent();
     }
 
     @Override
