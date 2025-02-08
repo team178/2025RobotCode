@@ -31,6 +31,10 @@ public class ElevatorIOSpark implements ElevatorIO {
     private DigitalInput upperPhotosensor;
     private DigitalInput lowerPhotosensor;
 
+    private ElevatorPosition desiredPosition;
+    private double leftEffectorDesiredVolts;
+    private double rightEffectorDesiredVolts;
+
     public ElevatorIOSpark() {
         elevatorLeaderMotor = new SparkMax(ElevatorConstants.kElevatorLeaderCANID, MotorType.kBrushless);
         elevatorFollowerMotor = new SparkMax(ElevatorConstants.kElevatorFollowerCANID, MotorType.kBrushless);
@@ -55,13 +59,25 @@ public class ElevatorIOSpark implements ElevatorIO {
         lowLimit = new DigitalInput(ElevatorConstants.kLowLimitDIO);
         upperPhotosensor = new DigitalInput(ElevatorConstants.kUpperPhotosensorDIO);
         lowerPhotosensor = new DigitalInput(ElevatorConstants.kLowerPhotosensorDIO);
+
+        desiredPosition = ElevatorPosition.HOME;
+        leftEffectorDesiredVolts = 0;
+        rightEffectorDesiredVolts = 0;
     }
 
     @Override
     public void updateInputs(ElevatorIOInputs inputs) {
+        inputs.desiredPosition = desiredPosition;
+        inputs.leftEffectorDesiredVolts = leftEffectorDesiredVolts;
+        inputs.rightEffectorDesiredVolts = rightEffectorDesiredVolts;
+
+        inputs.elevatorHeight = elevatorEncoder.getPosition();
+        inputs.elevatorVelocity = elevatorEncoder.getVelocity();
         inputs.leftEffectorVelocity = leftEffectorEncoder.getVelocity();
         inputs.rightEffectorVelocity = rightEffectorEncoder.getVelocity();
         
+        inputs.elevatorAppliedVolts = elevatorLeaderMotor.getAppliedOutput() * elevatorLeaderMotor.getBusVoltage();
+        inputs.elevatorCurrentAmps = elevatorLeaderMotor.getOutputCurrent();
         inputs.leftEffectorAppliedVolts = leftEffectorMotor.getAppliedOutput() * leftEffectorMotor.getBusVoltage();
         inputs.rightEffectorAppliedVolts = rightEffectorMotor.getAppliedOutput() * rightEffectorMotor.getBusVoltage();
         inputs.leftEffectorCurrentAmps = leftEffectorMotor.getOutputCurrent();
@@ -75,6 +91,7 @@ public class ElevatorIOSpark implements ElevatorIO {
 
     @Override
     public void setElevatorPosition(ElevatorPosition position) {
+        desiredPosition = position;
         double ffVolts = ElevatorConstants.elevatorControlConstants.kG();
         elevatorController.setReference(
             position.height, ControlType.kPosition,
@@ -89,11 +106,13 @@ public class ElevatorIOSpark implements ElevatorIO {
     
     @Override
     public void setLeftEffectorVolts(double volts) {
+        leftEffectorDesiredVolts = volts;
         leftEffectorMotor.setVoltage(volts);
     }
     
     @Override
     public void setRightEffectorVolts(double volts) {
+        rightEffectorDesiredVolts = volts;
         rightEffectorMotor.setVoltage(volts);
     }
     
