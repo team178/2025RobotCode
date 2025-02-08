@@ -8,6 +8,8 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 public interface SDSModuleIO {
     @AutoLog
     public static class SDSModuleIOInputs {
+        public SwerveModuleState desiredState = new SwerveModuleState(0, new Rotation2d(0));
+
         public Rotation2d turnPosition = new Rotation2d();
         public double turnVelocityRadPerSec = 0;
         
@@ -20,8 +22,6 @@ public interface SDSModuleIO {
         
         public double driveAppliedVolts = 0;
         public double driveCurrentAmps = 0;
-
-        public SwerveModuleState desiredState = new SwerveModuleState(0, new Rotation2d(0));
     }
     
     /** Updates loggable inputs. */

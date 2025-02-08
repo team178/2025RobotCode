@@ -1,6 +1,7 @@
 package frc.robot;
 
 import com.revrobotics.spark.config.SparkMaxConfig;
+import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
@@ -155,15 +156,22 @@ public class Constants {
         }
 	}
 
-	public static class ElevatorConstants { // CAN ID range 11-14
-		public static final int kMotorCANID = 11;
-		public static final int kFollowerCANID = 12;
-		
-		public static final int kLowerLimitDIO = 1;
-		public static final int kUpperLimitDIO = 2;
+	public static class ElevatorConstants { // CAN ID range 11-19
+		public static final int kElevatorLeaderCANID = 11;
+		public static final int kElevatorFollowerCANID = 12;
+		public static final int kLeftEffectorCANID = 13;
+		public static final int kRightEffectorCANID = 14;
+
+		public static final int kHighLimitDIO = 1;
+		public static final int kLowLimitDIO = 2;
+		public static final int kUpperPhotosensorDIO = 3;
+		public static final int kLowerPhotosensorDIO = 4;
 
 		public static final double kBeltWheelDiameter = Units.inchesToMeters(2); // meters
-		public static final double kPositionConversionFactor = kBeltWheelDiameter * Math.PI;
+		public static final double kElevatorPositionConversionFactor = kBeltWheelDiameter * Math.PI;
+
+		public static final double kNEOCPR = 4096; // might be 1024, test
+		public static final double kEffectorPositionConversionFactor = kNEOCPR; // counts to revolutions
 
 		public static final ControlConstants elevatorControlConstants = new ControlConstants(
 			"elevator",
@@ -175,54 +183,48 @@ public class Constants {
 			0
 		);
 
-		public static final SparkMaxConfig motorConfig = new SparkMaxConfig();
-		public static final SparkMaxConfig followerConfig = new SparkMaxConfig();
-
-		static {
-			motorConfig
-				.idleMode(IdleMode.kBrake)
-				.smartCurrentLimit(30)
-				.voltageCompensation(12)
-			; motorConfig.closedLoop
-				.feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
-				.p(elevatorControlConstants.kP())
-				.i(elevatorControlConstants.kI())
-				.d(elevatorControlConstants.kD())
-				.outputRange(-0.5, 0.5)
-			; motorConfig.absoluteEncoder
-				.positionConversionFactor(kPositionConversionFactor)
-				.velocityConversionFactor(kPositionConversionFactor)
-			;
-
-			followerConfig
-				.follow(kMotorCANID)
-				.idleMode(IdleMode.kBrake)
-				.smartCurrentLimit(30)
-				.voltageCompensation(12)
-			;
-		}
-	}
-
-	public static class EffectorConstants { // CAN ID range 15-19
-		public static final int kLeftMotorCANID = 15;
-		public static final int kRightMotorCANID = 16;
-
-		public static final int kHighPhotosensorDIO = 3;
-		public static final int kLowPhotosensorDIO = 4;
-
-		public static final double kNEOCPR = 4096; // might be 1024, test
-		public static final double kPositionConversionFactor = kNEOCPR; // counts to revolutions
-
+		public static final SparkMaxConfig elevatorLeaderConfig = new SparkMaxConfig();
+		public static final SparkMaxConfig elevatorFollowerConfig = new SparkMaxConfig();
 		public static final SparkMaxConfig effectorConfig = new SparkMaxConfig();
-
+		
 		static {
+			elevatorLeaderConfig
+				.idleMode(IdleMode.kBrake)
+				.smartCurrentLimit(30)
+				.voltageCompensation(12)
+			; elevatorLeaderConfig.closedLoop
+				.feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
+				.p(elevatorControlConstants.kP(), ClosedLoopSlot.kSlot0)
+				.i(elevatorControlConstants.kI(), ClosedLoopSlot.kSlot0)
+				.d(elevatorControlConstants.kD(), ClosedLoopSlot.kSlot0)
+				.p(elevatorControlConstants.kP(), ClosedLoopSlot.kSlot1)
+				.i(elevatorControlConstants.kI(), ClosedLoopSlot.kSlot1)
+				.d(elevatorControlConstants.kD(), ClosedLoopSlot.kSlot1)
+				.p(elevatorControlConstants.kP(), ClosedLoopSlot.kSlot2)
+				.i(elevatorControlConstants.kI(), ClosedLoopSlot.kSlot2)
+				.d(elevatorControlConstants.kD(), ClosedLoopSlot.kSlot2)
+				.outputRange(-1, 1, ClosedLoopSlot.kSlot0) // no limit
+				.outputRange(0, 1, ClosedLoopSlot.kSlot1) // low limit
+				.outputRange(-1, 0.1, ClosedLoopSlot.kSlot2) // high limit
+			; elevatorLeaderConfig.absoluteEncoder
+				.positionConversionFactor(kElevatorPositionConversionFactor)
+				.velocityConversionFactor(kElevatorPositionConversionFactor)
+			;
+
+			elevatorFollowerConfig
+				.follow(kElevatorLeaderCANID)
+				.idleMode(IdleMode.kBrake)
+				.smartCurrentLimit(30)
+				.voltageCompensation(12)
+			;
+
             effectorConfig
                 .idleMode(IdleMode.kBrake)
                 .smartCurrentLimit(30)
                 .voltageCompensation(12)
             ; effectorConfig.encoder
-				.positionConversionFactor(kPositionConversionFactor)
-				.velocityConversionFactor(kPositionConversionFactor)
+				.positionConversionFactor(kEffectorPositionConversionFactor)
+				.velocityConversionFactor(kEffectorPositionConversionFactor)
 			;
 		}
 	}

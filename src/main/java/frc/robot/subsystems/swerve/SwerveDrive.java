@@ -230,7 +230,7 @@ public class SwerveDrive extends SubsystemBase {
     @Override
     public void periodic() {
         gyroIO.updateInputs(gyroIOInputs);  
-        Logger.processInputs("Gyro", gyroIOInputs);
+        Logger.processInputs("Swerve/Gyro", gyroIOInputs);
 
         for(SDSSwerveModule module : modules) {
             module.periodic();

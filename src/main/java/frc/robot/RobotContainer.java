@@ -10,6 +10,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.subsystems.elevator.Elevator;
+import frc.robot.subsystems.elevator.ElevatorIO;
+import frc.robot.subsystems.elevator.ElevatorIOSpark;
 import frc.robot.subsystems.swerve.GyroIO;
 import frc.robot.subsystems.swerve.Pigeon2IO;
 import frc.robot.subsystems.swerve.SDSModuleIO;
@@ -21,6 +24,7 @@ public class RobotContainer {
     private CommandXboxController auxController;
 
     private SwerveDrive swerve;
+    private Elevator elevator;
 
     public RobotContainer() {
         Preferences.removeAll();
@@ -38,6 +42,7 @@ public class RobotContainer {
                     new SDSModuleIOSpark(2),
                     new SDSModuleIOSpark(3)
                 );
+                elevator = new Elevator(new ElevatorIOSpark());
                 break;
             default:
                 swerve = new SwerveDrive(
@@ -46,6 +51,7 @@ public class RobotContainer {
                     new SDSModuleIO() {},
                     new SDSModuleIO() {},
                     new SDSModuleIO() {});
+                elevator = new Elevator(new ElevatorIO() {});
                 break;
         }
 
