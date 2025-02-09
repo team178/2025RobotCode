@@ -15,7 +15,6 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
-import frc.robot.Constants;
 import frc.robot.Constants.SwerveConstants;
 import frc.robot.Constants.SwerveModuleConstants;
 
@@ -58,8 +57,8 @@ public class SDSModuleIOSpark implements SDSModuleIO {
             default -> new Rotation2d();
         };
 
-        SparkMaxConfig turnConfig = Constants.SwerveModuleConstants.turnConfig;
-        SparkMaxConfig driveConfig = Constants.SwerveModuleConstants.driveConfig;
+        SparkMaxConfig turnConfig = SwerveModuleConstants.turnConfig;
+        SparkMaxConfig driveConfig = SwerveModuleConstants.driveConfig;
 
         // likely disables CAN timeout, likely helpful, seen in other teams' code
         turnMotor.setCANTimeout(0);
