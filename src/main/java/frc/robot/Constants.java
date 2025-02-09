@@ -161,6 +161,7 @@ public class Constants {
 		public static final int kElevatorFollowerCANID = 12;
 		public static final int kLeftEffectorCANID = 13;
 		public static final int kRightEffectorCANID = 14;
+		public static final int kFunnelMotorCANID = 15;
 
 		public static final int kHighLimitDIO = 1;
 		public static final int kLowLimitDIO = 2;
@@ -185,7 +186,7 @@ public class Constants {
 
 		public static final SparkMaxConfig elevatorLeaderConfig = new SparkMaxConfig();
 		public static final SparkMaxConfig elevatorFollowerConfig = new SparkMaxConfig();
-		public static final SparkMaxConfig effectorConfig = new SparkMaxConfig();
+		public static final SparkMaxConfig effectorConfig = new SparkMaxConfig(); // also used for funnel motor, since is the same
 		
 		static {
 			elevatorLeaderConfig

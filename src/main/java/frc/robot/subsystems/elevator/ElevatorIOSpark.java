@@ -19,10 +19,12 @@ public class ElevatorIOSpark implements ElevatorIO {
     private SparkMax elevatorFollowerMotor;
     private SparkMax leftEffectorMotor;
     private SparkMax rightEffectorMotor;
+    private SparkMax funnelMotor;
 
     private SparkAbsoluteEncoder elevatorEncoder;
     private RelativeEncoder leftEffectorEncoder;
     private RelativeEncoder rightEffectorEncoder;
+    private RelativeEncoder funnelEncoder;
 
     private SparkClosedLoopController elevatorController;
 
@@ -34,26 +36,33 @@ public class ElevatorIOSpark implements ElevatorIO {
     private ElevatorPosition desiredPosition;
     private double leftEffectorDesiredVolts;
     private double rightEffectorDesiredVolts;
+    private double funnelDesiredVolts;
 
     public ElevatorIOSpark() {
         elevatorLeaderMotor = new SparkMax(ElevatorConstants.kElevatorLeaderCANID, MotorType.kBrushless);
         elevatorFollowerMotor = new SparkMax(ElevatorConstants.kElevatorFollowerCANID, MotorType.kBrushless);
         leftEffectorMotor = new SparkMax(ElevatorConstants.kLeftEffectorCANID, MotorType.kBrushless);
         rightEffectorMotor = new SparkMax(ElevatorConstants.kRightEffectorCANID, MotorType.kBrushless);
+        funnelMotor = new SparkMax(ElevatorConstants.kFunnelMotorCANID, MotorType.kBrushless);
 
         elevatorLeaderMotor.setCANTimeout(0);
         elevatorFollowerMotor.setCANTimeout(0);
         leftEffectorMotor.setCANTimeout(0);
         rightEffectorMotor.setCANTimeout(0);
+        funnelMotor.setCANTimeout(0);
 
         elevatorEncoder = elevatorLeaderMotor.getAbsoluteEncoder();
         leftEffectorEncoder = leftEffectorMotor.getEncoder();
         rightEffectorEncoder = rightEffectorMotor.getEncoder();
+        funnelEncoder = funnelMotor.getEncoder();
 
         elevatorController = elevatorLeaderMotor.getClosedLoopController();
 
+        elevatorLeaderMotor.configure(ElevatorConstants.elevatorLeaderConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        elevatorFollowerMotor.configure(ElevatorConstants.elevatorFollowerConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         leftEffectorMotor.configure(ElevatorConstants.effectorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         rightEffectorMotor.configure(ElevatorConstants.effectorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        funnelMotor.configure(ElevatorConstants.effectorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
         highLimit = new DigitalInput(ElevatorConstants.kHighLimitDIO);
         lowLimit = new DigitalInput(ElevatorConstants.kLowLimitDIO);
@@ -70,11 +79,13 @@ public class ElevatorIOSpark implements ElevatorIO {
         inputs.desiredPosition = desiredPosition;
         inputs.leftEffectorDesiredVolts = leftEffectorDesiredVolts;
         inputs.rightEffectorDesiredVolts = rightEffectorDesiredVolts;
+        inputs.funnelMotorDesiredVolts = funnelDesiredVolts;
 
         inputs.elevatorHeight = elevatorEncoder.getPosition();
         inputs.elevatorVelocity = elevatorEncoder.getVelocity();
         inputs.leftEffectorVelocity = leftEffectorEncoder.getVelocity();
         inputs.rightEffectorVelocity = rightEffectorEncoder.getVelocity();
+        inputs.funnelMotorVelocity = funnelEncoder.getVelocity();
         
         inputs.elevatorAppliedVolts = elevatorLeaderMotor.getAppliedOutput() * elevatorLeaderMotor.getBusVoltage();
         inputs.elevatorCurrentAmps = elevatorLeaderMotor.getOutputCurrent();
@@ -82,6 +93,8 @@ public class ElevatorIOSpark implements ElevatorIO {
         inputs.rightEffectorAppliedVolts = rightEffectorMotor.getAppliedOutput() * rightEffectorMotor.getBusVoltage();
         inputs.leftEffectorCurrentAmps = leftEffectorMotor.getOutputCurrent();
         inputs.rightEffectorCurrentAmps = rightEffectorMotor.getOutputCurrent();
+        inputs.funnelMotorAppliedVolts = funnelMotor.getAppliedOutput() * funnelMotor.getBusVoltage();
+        inputs.funnelMotorCurrentAmps = funnelMotor.getOutputCurrent();
 
         inputs.highLimit = highLimit.get();
         inputs.lowLimit = lowLimit.get();
@@ -120,5 +133,11 @@ public class ElevatorIOSpark implements ElevatorIO {
     public void setEffectorVolts(double left, double right) {
         setLeftEffectorVolts(left);
         setRightEffectorVolts(right);
+    }
+
+    @Override
+    public void setFunnelMotorVolts(double volts) {
+        funnelDesiredVolts = volts;
+        funnelMotor.setVoltage(volts);
     }
 }
