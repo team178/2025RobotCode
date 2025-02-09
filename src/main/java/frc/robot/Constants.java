@@ -167,8 +167,8 @@ public class Constants {
 		public static final int kUpperPhotosensorDIO = 3;
 		public static final int kLowerPhotosensorDIO = 4;
 
-		public static final double kBeltWheelDiameter = Units.inchesToMeters(2); // meters
-		public static final double kElevatorPositionConversionFactor = kBeltWheelDiameter * Math.PI;
+		public static final double kSprocketPitchDiameter = Units.inchesToMeters(1.7567); // meters
+		public static final double kElevatorPositionConversionFactor = kSprocketPitchDiameter * Math.PI;
 
 		public static final double kNEOCPR = 4096; // might be 1024, test
 		public static final double kEffectorPositionConversionFactor = kNEOCPR; // counts to revolutions
