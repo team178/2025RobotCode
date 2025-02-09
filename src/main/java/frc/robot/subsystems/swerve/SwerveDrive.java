@@ -112,13 +112,17 @@ public class SwerveDrive extends SubsystemBase {
         DoubleSupplier xInput, DoubleSupplier yInput, DoubleSupplier omegaInput,
         BooleanSupplier robotCentric, BooleanSupplier noOptimize) {
         return run(() -> {
+            double xInputValue = xInput.getAsDouble();
+            double yInputValue = yInput.getAsDouble();
+            yInputValue *= -1; // y-axis is inverted on joystick
+
             double deadband = 0.2; // minimum axis input before robot input
             double minThreshold = 0.1; // minimum robot input to overcome resistance
             double steepness = 1.8; // power to raise input (which is on interval [-1, 1], so reduces lower values)
 
-            // apply drive filters (negatives based on last year)
-            double vx = adjustAxisInput(-xInput.getAsDouble(), deadband, minThreshold, steepness);
-            double vy = adjustAxisInput(-yInput.getAsDouble(), deadband, minThreshold, steepness);
+            // rotate axes to NWU coordinate system
+            double vx = adjustAxisInput(yInputValue, deadband, minThreshold, steepness);
+            double vy = adjustAxisInput(-xInputValue, deadband, minThreshold, steepness);
             double omega = adjustAxisInput(-omegaInput.getAsDouble(), deadband, minThreshold, steepness);
 
             adjustDriveSpeeds(vx, vy, omega, !robotCentric.getAsBoolean(), !noOptimize.getAsBoolean());

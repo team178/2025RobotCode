@@ -60,8 +60,8 @@ public class RobotContainer {
 
     private void configureBindings() {
         swerve.setDefaultCommand(swerve.runDriveInputs(
-            driverController::getLeftY,
             driverController::getLeftX,
+            driverController::getLeftY,
             driverController::getRightX,
             driverController.leftBumper()::getAsBoolean,
             driverController.leftTrigger()::getAsBoolean
