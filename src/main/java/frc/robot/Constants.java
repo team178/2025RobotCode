@@ -1,5 +1,6 @@
 package frc.robot;
 
+import com.revrobotics.spark.config.AbsoluteEncoderConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
@@ -183,7 +184,7 @@ public class Constants {
 			0,
 			0
 		);
-
+		
 		public static final SparkMaxConfig elevatorLeaderConfig = new SparkMaxConfig();
 		public static final SparkMaxConfig elevatorFollowerConfig = new SparkMaxConfig();
 		public static final SparkMaxConfig effectorConfig = new SparkMaxConfig(); // also used for funnel motor, since is the same
@@ -236,8 +237,11 @@ public class Constants {
 
 		public static final int kPhotosensorDIO = 5;
 
+		public static final double kNEOKv = 473;
 		public static final double kNEOCPR = 4096; // might be 1024, test
 		public static final double kPositionConversionFactor = kNEOCPR; // counts to revolutions
+
+		public static final double kDeployEncoderOffset = 0.0; // TODO test
 
 		public static final ControlConstants deployControlConstants = new ControlConstants(
 			"manipulator",
@@ -251,6 +255,8 @@ public class Constants {
 
 		public static final SparkMaxConfig deployConfig = new SparkMaxConfig();
 		public static final SparkMaxConfig rollerConfig = new SparkMaxConfig();
+
+		public static final AbsoluteEncoderConfig deployEncoderConfig = new AbsoluteEncoderConfig();
 
 		static {
 			deployConfig
@@ -276,6 +282,8 @@ public class Constants {
 				.positionConversionFactor(kPositionConversionFactor)
 				.velocityConversionFactor(kPositionConversionFactor)
 			;
+
+			deployEncoderConfig.zeroOffset(kDeployEncoderOffset);
 		}
 	}
 
