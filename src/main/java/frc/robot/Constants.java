@@ -95,10 +95,10 @@ public class Constants {
         public static final SparkMaxConfig turnConfig = new SparkMaxConfig();
         public static final SparkMaxConfig driveConfig = new SparkMaxConfig();
 
-		public static final Rotation2d FLZeroRotation = new Rotation2d();
-		public static final Rotation2d FRZeroRotation = new Rotation2d();
-		public static final Rotation2d BLZeroRotation = new Rotation2d();
-		public static final Rotation2d BRZeroRotation = new Rotation2d();
+		public static final Rotation2d FLZeroRotation = new Rotation2d(1.901 + Math.PI); // 5 -> 7
+		public static final Rotation2d FRZeroRotation = new Rotation2d(-0.45 + 2 * Math.PI); // 6 -> 5
+		public static final Rotation2d BLZeroRotation = new Rotation2d(2.88 + Math.PI); // 7 -> 6
+		public static final Rotation2d BRZeroRotation = new Rotation2d(0.791); // 8 -> 6
 
 		public static final ControlConstants turnControlConstants = new ControlConstants(
 			"swerveModule/turn",
