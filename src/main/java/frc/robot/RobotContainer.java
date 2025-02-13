@@ -13,6 +13,8 @@ import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
+import frc.robot.subsystems.manipulator.Manipulator;
+import frc.robot.subsystems.manipulator.ManipulatorPosition;
 import frc.robot.subsystems.swerve.GyroIO;
 import frc.robot.subsystems.swerve.Pigeon2IO;
 import frc.robot.subsystems.swerve.SDSModuleIO;
@@ -25,6 +27,7 @@ public class RobotContainer {
 
     private SwerveDrive swerve;
     private Elevator elevator;
+    private Manipulator manipulator;
 
     public RobotContainer() {
         Preferences.removeAll();
@@ -72,6 +75,10 @@ public class RobotContainer {
         driverController.x().onTrue(swerve.runOpenTestDrive());
         driverController.x().onFalse(swerve.runStopDrive());
         driverController.b().onTrue(swerve.runUpdateControlConstants());
+
+        auxController.a().onTrue(manipulator.setManipulatorPosition(ManipulatorPosition.HOME));
+        auxController.b().onTrue(manipulator.setManipulatorPosition(ManipulatorPosition.INTAKE));
+        auxController.x().onTrue(manipulator.setManipulatorPosition(ManipulatorPosition.CARRY));
     }
 
     public Command getAutonomousCommand() {

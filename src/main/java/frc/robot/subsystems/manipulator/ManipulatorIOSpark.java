@@ -36,10 +36,6 @@ public class ManipulatorIOSpark implements ManipulatorIO {
         deployMotor.configure(ManipulatorConstants.deployConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
 
-    public double applyDeployAngleOffset(double angleInRadians) {
-        return angleInRadians + ManipulatorConstants.kDeployEncoderOffset;
-    }
-
     @Override
     public void updateInputs(ManipulatorIOInputs inputs) {
         inputs.desiredPosition = desiredPosition;
