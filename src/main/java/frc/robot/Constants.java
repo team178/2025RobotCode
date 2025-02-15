@@ -237,24 +237,22 @@ public class Constants {
 
 		public static final int kPhotosensorDIO = 5;
 
-		public static final double kNEOKv = 473;
-		public static final double kNEOCPR = 4096; // might be 1024, test
-		public static final double kPositionConversionFactor = kNEOCPR; // counts to revolutions
-
 		public static final double kDeployEncoderOffset = 0.0; // TODO test
-
+		
 		// TODO fill in
 		public static final double kDeployRadiusToCenterOfMass = 0.0; // meters
 		public static final double kDeployMass = 0.0; // kilograms
 		public static final double kGravity = 9.81; // meters per second
 		public static final double kVoltagePerTorque = 0.0; // volts / Newton meter
-
+		
+		public static final double kNEOKv = 473;
+		
 		// The torque should be equal to the
 		// radius(l to center of mass) * the mass of the arm * gravity(9.8) * the cosine of the angle
 		// Therefore, the G constant should be r*m*a, then account for how many volts it needs to have the right torque
 		public static final ControlConstants deployControlConstants = new ControlConstants(
 			"manipulator",
-			0.0001, // to test
+			0.0001, // TODO to test
 			0,
 			0,
 			0,
@@ -264,8 +262,6 @@ public class Constants {
 
 		public static final SparkMaxConfig deployConfig = new SparkMaxConfig();
 		public static final SparkMaxConfig rollerConfig = new SparkMaxConfig();
-
-		public static final AbsoluteEncoderConfig deployEncoderConfig = new AbsoluteEncoderConfig();
 
 		static {
 			deployConfig
@@ -289,11 +285,9 @@ public class Constants {
 				.smartCurrentLimit(30)
 				.voltageCompensation(12)
 			; rollerConfig.encoder
-				.positionConversionFactor(kPositionConversionFactor)
-				.velocityConversionFactor(kPositionConversionFactor)
+				.positionConversionFactor(1) // revolutions
+				.velocityConversionFactor(1) // RPM
 			;
-
-			deployEncoderConfig.zeroOffset(kDeployEncoderOffset);
 		}
 	}
 

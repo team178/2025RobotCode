@@ -9,8 +9,15 @@ public interface ManipulatorIO {
         public double desiredDeployVoltage = 0;
         public double desiredRollerVoltage = 0;
 
-        public double manipulatorAngle = 0;
-        public double manipulatorVelocity = 0;
+        public double deployPosition = 0;
+        public double deployVelocity = 0;
+        public double rollerPosition = 0;
+        public double rollerVelocity = 0;
+
+        public double deployAppliedVolts = 0;
+        public double deployCurrentAmps = 0;
+        public double rollerAppliedVolts = 0;
+        public double rollerCurrentAmps = 0;
     }
 
     public default void updateInputs(ManipulatorIOInputs inputs) {}

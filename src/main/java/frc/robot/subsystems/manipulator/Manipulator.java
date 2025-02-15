@@ -1,18 +1,39 @@
 package frc.robot.subsystems.manipulator;
 
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Manipulator extends SubsystemBase {
-    private ManipulatorIO manipulatorIO;
+    private ManipulatorIO io;
+    private ManipulatorIOInputsAutoLogged inputs;
 
     public Manipulator(ManipulatorIO io) {
-        manipulatorIO = io;
+        this.io = io;
     }
 
-    public Command setManipulatorPosition(ManipulatorPosition position) {
+    public Command runSetManipulatorPosition(ManipulatorPosition position) {
         return runOnce(() -> {
-            manipulatorIO.setManipulatorPosition(position);
+            io.setManipulatorPosition(position);
         });
+    }
+
+    public Command runSetRollerVolts(double volts) {
+        return runOnce(() -> {
+            io.setRollerVolts(volts);
+        });
+    }
+
+    public Command runUpdateControlConstants() {
+        return runOnce(() -> {
+            io.updateControlConstants();
+        });
+    }
+
+    @Override
+    public void periodic() {
+        io.updateInputs(inputs);
+        Logger.processInputs("Manipulator", inputs);
     }
 }

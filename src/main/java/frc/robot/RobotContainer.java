@@ -4,7 +4,6 @@
 
 package frc.robot;
 
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -14,6 +13,8 @@ import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
 import frc.robot.subsystems.manipulator.Manipulator;
+import frc.robot.subsystems.manipulator.ManipulatorIO;
+import frc.robot.subsystems.manipulator.ManipulatorIOSpark;
 import frc.robot.subsystems.manipulator.ManipulatorPosition;
 import frc.robot.subsystems.swerve.GyroIO;
 import frc.robot.subsystems.swerve.Pigeon2IO;
@@ -46,6 +47,7 @@ public class RobotContainer {
                     new SDSModuleIOSpark(3)
                 );
                 elevator = new Elevator(new ElevatorIOSpark());
+                manipulator = new Manipulator(new ManipulatorIOSpark());
                 break;
             default:
                 swerve = new SwerveDrive(
@@ -55,6 +57,7 @@ public class RobotContainer {
                     new SDSModuleIO() {},
                     new SDSModuleIO() {});
                 elevator = new Elevator(new ElevatorIO() {});
+                manipulator = new Manipulator(new ManipulatorIO() {});
                 break;
         }
 
@@ -76,9 +79,9 @@ public class RobotContainer {
         driverController.x().onFalse(swerve.runStopDrive());
         driverController.b().onTrue(swerve.runUpdateControlConstants());
 
-        auxController.a().onTrue(manipulator.setManipulatorPosition(ManipulatorPosition.HOME));
-        auxController.b().onTrue(manipulator.setManipulatorPosition(ManipulatorPosition.INTAKE));
-        auxController.x().onTrue(manipulator.setManipulatorPosition(ManipulatorPosition.CARRY));
+        // auxController.a().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.HOME));
+        // auxController.b().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.INTAKE));
+        // auxController.x().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.CARRY));
     }
 
     public Command getAutonomousCommand() {

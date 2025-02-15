@@ -9,6 +9,7 @@ import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.SparkMaxConfig;
 
 import frc.robot.Constants.ManipulatorConstants;
 
@@ -34,6 +35,7 @@ public class ManipulatorIOSpark implements ManipulatorIO {
         rollerMotor.setCANTimeout(0);
 
         deployMotor.configure(ManipulatorConstants.deployConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        rollerMotor.configure(ManipulatorConstants.rollerConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
 
     @Override
@@ -42,8 +44,15 @@ public class ManipulatorIOSpark implements ManipulatorIO {
         inputs.desiredDeployVoltage = desiredDeployVoltage;
         inputs.desiredRollerVoltage = desiredRollerVoltage;
 
-        inputs.manipulatorAngle = deployEncoder.getPosition();
-        inputs.manipulatorVelocity = deployEncoder.getVelocity();
+        inputs.deployPosition = deployEncoder.getPosition();
+        inputs.deployVelocity = deployEncoder.getVelocity();
+        inputs.rollerPosition = rollerMotor.getEncoder().getPosition();
+        inputs.rollerVelocity = rollerMotor.getEncoder().getVelocity();
+
+        inputs.deployAppliedVolts = deployMotor.getAppliedOutput() * deployMotor.getBusVoltage();
+        inputs.deployCurrentAmps = deployMotor.getOutputCurrent();
+        inputs.rollerAppliedVolts = rollerMotor.getAppliedOutput() * rollerMotor.getBusVoltage();
+        inputs.rollerCurrentAmps = rollerMotor.getOutputCurrent();
     }
 
     @Override
@@ -63,5 +72,18 @@ public class ManipulatorIOSpark implements ManipulatorIO {
     public void setRollerVolts(double volts) {
         desiredRollerVoltage = volts;
         rollerMotor.setVoltage(volts);
+    }
+
+    @Override
+    public void updateControlConstants() {
+        SparkMaxConfig deployConfig = new SparkMaxConfig();
+
+        deployConfig.closedLoop
+            .p(ManipulatorConstants.deployControlConstants.kP())
+            .i(ManipulatorConstants.deployControlConstants.kI())
+            .d(ManipulatorConstants.deployControlConstants.kD())
+        ;
+        
+        rollerMotor.configure(deployConfig, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
     }
 }
