@@ -43,7 +43,7 @@ public class SDSSwerveModule {
         }
         if(optimize) {
             state.optimize(inputs.turnPosition);
-            // state.cosineScale(inputs.turnPosition);
+            state.cosineScale(inputs.turnPosition);
         }
         desiredModuleState = state;
         io.setTurnPosition(state.angle);

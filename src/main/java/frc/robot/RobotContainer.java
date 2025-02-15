@@ -46,8 +46,8 @@ public class RobotContainer {
                     new SDSModuleIOSpark(2),
                     new SDSModuleIOSpark(3)
                 );
-                elevator = new Elevator(new ElevatorIOSpark());
-                manipulator = new Manipulator(new ManipulatorIOSpark());
+                // elevator = new Elevator(new ElevatorIOSpark());
+                // manipulator = new Manipulator(new ManipulatorIOSpark());
                 break;
             default:
                 swerve = new SwerveDrive(
@@ -56,8 +56,8 @@ public class RobotContainer {
                     new SDSModuleIO() {},
                     new SDSModuleIO() {},
                     new SDSModuleIO() {});
-                elevator = new Elevator(new ElevatorIO() {});
-                manipulator = new Manipulator(new ManipulatorIO() {});
+                // elevator = new Elevator(new ElevatorIO() {});
+                // manipulator = new Manipulator(new ManipulatorIO() {});
                 break;
         }
 
@@ -69,15 +69,19 @@ public class RobotContainer {
             driverController::getLeftX,
             driverController::getLeftY,
             driverController::getRightX,
+            driverController::getRightTriggerAxis,
             driverController.leftBumper()::getAsBoolean,
-            driverController.leftTrigger()::getAsBoolean
+            driverController.rightBumper()::getAsBoolean
         ));
 
-        driverController.a().onTrue(swerve.runTestDrive());
-        driverController.a().onFalse(swerve.runStopDrive());
-        driverController.x().onTrue(swerve.runOpenTestDrive());
-        driverController.x().onFalse(swerve.runStopDrive());
+        // driverController.a().onTrue(swerve.runTestDrive());
+        // driverController.a().onFalse(swerve.runStopDrive());
+        // driverController.x().onTrue(swerve.runOpenTestDrive());
+        // driverController.x().onFalse(swerve.runStopDrive());
         driverController.b().onTrue(swerve.runUpdateControlConstants());
+        driverController.back().onTrue(swerve.runToXPosition(true));
+        driverController.y().onTrue(swerve.runZeroGyro());
+        driverController.start().onTrue(swerve.runSetTempPose());
 
         // auxController.a().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.HOME));
         // auxController.b().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.INTAKE));

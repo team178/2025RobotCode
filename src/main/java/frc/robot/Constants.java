@@ -55,25 +55,23 @@ public class Constants {
 
 		public static final int kPigeonCANID = 9; // this needs to be checked too
 
-        //THE BELOW WILL NEED TO BE CHECKED
-
-		public static final double kSRXMagEncoderCPR = 4096; // may be 1024 counts per revolution
-		public static final double kTurnRelPositionConversionFactor = Units.rotationsToRadians(1 / kSRXMagEncoderCPR); // radians per count (radians per revolution * revolutions per count)
-
 		public static final double kDriveGearRatio = 6.12 / 1; // rotor rotations per wheel rotations
 		public static final double kInternalNEOEncoderCPR = 42 / 1; // counts on encoder counts per revolution
 		public static final double kWheelRadiusMeters = Units.inchesToMeters(4 / 2); // meters per revolution (wheel circumference)
-		public static final double kDrivePositionConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio * kInternalNEOEncoderCPR); // wheel rad per rotor count
-		public static final double kDriveVelocityConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio * kInternalNEOEncoderCPR); // wheel rad per second  per  rotor count per second
+		// public static final double kDrivePositionConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio * kInternalNEOEncoderCPR); // wheel rad per rotor count
+		public static final double kDrivePositionConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio); // wheel rad per rotor count
+		public static final double kDriveVelocityConversionFactor = Units.rotationsToRadians(1) / (kDriveGearRatio * 60); // wheel rad per second  per  rotor revolutions per minute
 		public static final double kTurnPositionConversionFactor = Units.rotationsToRadians(1); // rotations -> radians
 		public static final double kTurnVelocityConversionFactor = Units.rotationsToRadians(1); // rotations per second -> radians per second (not minutes?)
 
-		public static final double kMaxWheelSpeed = 8; // m/s
-		public static final double kMagVelLimit = 2.5; // m/s
-		public static final double kDirVelLimit = 10; // rad/s
-		public static final double kRotVelLimit = 6; // rad/s
-		public static final double kMagAccelLimit = 48; // m/s^2
-		public static final double kRotAccelLimit = 30; // rad/s^2
+		public static final double kMaxWheelSpeed = 20; // m/s
+		public static final double kMagVelLimit = 7; // m/s
+		public static final double kRotVelLimit = 18; // rad/s
+		// public static final double kDirVelLimit = 10; // rad/s
+		// public static final double kMagAccelLimit = 48; // m/s^2
+		// public static final double kRotAccelLimit = 30; // rad/s^2
+
+		public static final double kSlowedMult = 0.12;
 
 		public static final SwerveDriveKinematics kSwerveKinematics = new SwerveDriveKinematics( //! make sure these are the right order, FRONT left right, BACK left right
 			new Translation2d(-SwerveConstants.kWheelDistanceMeters / 2, SwerveConstants.kWheelDistanceMeters / 2),
@@ -81,13 +79,13 @@ public class Constants {
 			new Translation2d(-SwerveConstants.kWheelDistanceMeters / 2, -SwerveConstants.kWheelDistanceMeters / 2),
 			new Translation2d(SwerveConstants.kWheelDistanceMeters / 2, -SwerveConstants.kWheelDistanceMeters / 2)
 		);
-		
-		public static final double kDefaultTestTurn = 0;
-		public static final double kDefaultTestDrive = 0;
 
 		static {
-			Preferences.initDouble("kSwerveTestTurn", kDefaultTestTurn);
-			Preferences.initDouble("kSwerveTestDrive", kDefaultTestDrive);
+			// Preferences.initDouble("kSwerveTestTurn", 0);
+			// Preferences.initDouble("kSwerveTestDrive", 0);
+			Preferences.initDouble("odometry/setPoseX", 0);
+			Preferences.initDouble("odometry/setPoseY", 0);
+			Preferences.initDouble("odometry/setPoseRot", 0);
 			System.out.println("SwerveConstants initialized");
 		}
 	}
@@ -96,10 +94,10 @@ public class Constants {
         public static final SparkMaxConfig turnConfig = new SparkMaxConfig();
         public static final SparkMaxConfig driveConfig = new SparkMaxConfig();
 
-		public static final Rotation2d FLZeroRotation = new Rotation2d();
-		public static final Rotation2d FRZeroRotation = new Rotation2d();
-		public static final Rotation2d BLZeroRotation = new Rotation2d();
-		public static final Rotation2d BRZeroRotation = new Rotation2d();
+		public static final Rotation2d FLZeroRotation = new Rotation2d(4.262);
+		public static final Rotation2d FRZeroRotation = new Rotation2d(5.503);
+		public static final Rotation2d BLZeroRotation = new Rotation2d(3.472);
+		public static final Rotation2d BRZeroRotation = new Rotation2d(4.451);
 
 		public static final ControlConstants turnControlConstants = new ControlConstants(
 			"swerveModule/turn",
@@ -113,12 +111,12 @@ public class Constants {
 
 		public static final ControlConstants driveControlConstants = new ControlConstants(
 			"swerveModule/drive",
-			0.00009, // 0.01
+			0, // 0.01 -> 0.00009
 			0, // 0, used 0.0001 in the past
 			0,
-			0.0069, // 0.145
+			0.0145, // 0.145
             0,
-            0.11
+            0 // 0.11
 		);
 
         static {
@@ -172,9 +170,6 @@ public class Constants {
 		public static final double kSprocketPitchDiameter = Units.inchesToMeters(1.7567); // meters
 		public static final double kElevatorPositionConversionFactor = kSprocketPitchDiameter * Math.PI;
 
-		public static final double kNEOCPR = 4096; // might be 1024, test
-		public static final double kEffectorPositionConversionFactor = kNEOCPR; // counts to revolutions
-
 		public static final ControlConstants elevatorControlConstants = new ControlConstants(
 			"elevator",
 			0.0001, // to test
@@ -225,8 +220,8 @@ public class Constants {
                 .smartCurrentLimit(30)
                 .voltageCompensation(12)
             ; effectorConfig.encoder
-				.positionConversionFactor(kEffectorPositionConversionFactor)
-				.velocityConversionFactor(kEffectorPositionConversionFactor)
+				.positionConversionFactor(1) // revolutions
+				.velocityConversionFactor(1) // RPM
 			;
 		}
 	}

@@ -3,13 +3,10 @@ package frc.robot.subsystems.swerve;
 import org.littletonrobotics.junction.AutoLog;
 
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
 
 public interface SDSModuleIO {
     @AutoLog
     public static class SDSModuleIOInputs {
-        public SwerveModuleState desiredState = new SwerveModuleState(0, new Rotation2d(0));
-
         public Rotation2d turnPosition = new Rotation2d();
         public double turnVelocityRadPerSec = 0;
         
