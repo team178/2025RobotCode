@@ -6,11 +6,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
+import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
-
-import com.ctre.phoenix6.configs.Pigeon2Configuration;
-import com.ctre.phoenix6.hardware.Pigeon2;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
@@ -27,6 +25,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.RobotMode;
@@ -37,7 +36,7 @@ public class SwerveDrive extends SubsystemBase {
     public static final Lock odometryLock = new ReentrantLock();
     private SysIdRoutine sysId;
 
-    private static final boolean useOdometryForFieldRelative = false;
+    private static final boolean useOdometryForFieldRelative = true;
 
     private GyroIO gyroIO;
     private GyroIOInputsAutoLogged gyroIOInputs;
@@ -49,8 +48,8 @@ public class SwerveDrive extends SubsystemBase {
     private SwerveDriveKinematics kinematics;
     private SwerveDrivePoseEstimator poseEstimator;
 
-    private double personalSpeedFactor;
     private double elevatorSpeedFactor;
+    private boolean toX;
 
     //! Vision to be added
 
@@ -71,8 +70,8 @@ public class SwerveDrive extends SubsystemBase {
     }
 
     private void initMathModels() {
-        personalSpeedFactor = 1;
         elevatorSpeedFactor = 1;
+        toX = true;
 
         rawGyroRotation = new Rotation2d();
         modulePositions = Arrays.stream(modules).map(module -> module.getPosition()).toArray(SwerveModulePosition[]::new);
@@ -82,21 +81,21 @@ public class SwerveDrive extends SubsystemBase {
             new Translation2d(-SwerveConstants.kWheelDistanceMeters / 2,  SwerveConstants.kWheelDistanceMeters / 2), // BL
             new Translation2d(-SwerveConstants.kWheelDistanceMeters / 2, -SwerveConstants.kWheelDistanceMeters / 2)  // BR
         );
-        poseEstimator = new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, modulePositions, new Pose2d());
+        poseEstimator = new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, modulePositions, (Constants.isRed() ? new Pose2d(17.548, 8.052, Rotation2d.kPi) : new Pose2d()));
     }
 
     private double adjustAxisInput(double controllerInput, double deadband, double minThreshold, double steepness) {
         // see https://www.desmos.com/calculator/wj59z401tq
         return
             Math.abs(controllerInput) > deadband ?
-            (
+            MathUtil.clamp(
                 Math.signum(controllerInput) *
-                (1 - minThreshold) *
+                ((1 - minThreshold) *
                 Math.pow(
                     (Math.abs(controllerInput) - deadband) / (1 - deadband),
                     steepness) +
-                minThreshold
-            ) : 0;
+                minThreshold)
+            , -1, 1) : 0;
     }
 
     /**
@@ -109,38 +108,45 @@ public class SwerveDrive extends SubsystemBase {
      * @return
      */
     public Command runDriveInputs(
-        DoubleSupplier xInput, DoubleSupplier yInput, DoubleSupplier omegaInput,
+        DoubleSupplier xInput, DoubleSupplier yInput, DoubleSupplier omegaInput, DoubleSupplier speedFactorInput,
         BooleanSupplier robotCentric, BooleanSupplier noOptimize) {
         return run(() -> {
             double xInputValue = xInput.getAsDouble();
             double yInputValue = yInput.getAsDouble();
+            double omegaInputValue = omegaInput.getAsDouble();
             yInputValue *= -1; // y-axis is inverted on joystick
+            omegaInputValue *= -1; // rotation is reversed
 
-            double deadband = 0.2; // minimum axis input before robot input
-            double minThreshold = 0.1; // minimum robot input to overcome resistance
-            double steepness = 1.8; // power to raise input (which is on interval [-1, 1], so reduces lower values)
+            // double deadband = 0.2; // minimum axis input before robot input
+            // double minThreshold = 0.05; // minimum robot input to overcome resistance
+            // double steepness = 1.8; // power to raise input (which is on interval [-1, 1], so reduces lower values)
 
             // rotate axes to NWU coordinate system
-            double vx = adjustAxisInput(yInputValue, deadband, minThreshold, steepness);
-            double vy = adjustAxisInput(-xInputValue, deadband, minThreshold, steepness);
-            double omega = adjustAxisInput(-omegaInput.getAsDouble(), deadband, minThreshold, steepness);
+            // double vx = adjustAxisInput(yInputValue, deadband, minThreshold, steepness);
+            // double vy = adjustAxisInput(-xInputValue, deadband, minThreshold, steepness);
+            // double omega = adjustAxisInput(omegaInput.getAsDouble(), deadband, minThreshold, steepness);
+            double speedFactor = 1 - (1 - SwerveConstants.kSlowedMult) * speedFactorInput.getAsDouble();
 
-            adjustDriveSpeeds(vx, vy, omega, !robotCentric.getAsBoolean(), !noOptimize.getAsBoolean());
+            adjustDriveSpeeds(yInputValue, -xInputValue, omegaInputValue, speedFactor, !robotCentric.getAsBoolean(), !noOptimize.getAsBoolean());
         });
     }
 
-    public void adjustDriveSpeeds(double vx, double vy, double omega, boolean fieldRelative, boolean optimize) {
+    public void adjustDriveSpeeds(double vx, double vy, double omega, double speedFactor, boolean fieldRelative, boolean optimize) {
         double mag = Math.hypot(vx, vy);
         double dir = Math.atan2(vy, vx);
 
-        // scale to max, then scale square onto circle
-        mag *= SwerveConstants.kMagVelLimit * personalSpeedFactor * elevatorSpeedFactor;
-        mag /= Math.min(
-            Math.sqrt(1 + Math.pow(Math.sin(dir), 2)),
-            Math.sqrt(1 + Math.pow(Math.cos(dir), 2))
-        );
+        double deadband = 0.2; // minimum axis input before robot input
+        double minThreshold = 0.03; // minimum robot input to overcome resistance
+        double steepness = 1.8; // power to raise input (which is on interval [-1, 1], so reduces lower values)
+        mag = adjustAxisInput(mag, deadband, minThreshold, steepness);
+        mag *= SwerveConstants.kMagVelLimit * speedFactor * elevatorSpeedFactor;
+        omega = adjustAxisInput(omega, deadband, minThreshold, steepness);
         omega *= SwerveConstants.kRotVelLimit;
 
+        if(toX && mag == 0 && omega == 0) {
+            toXPosition(optimize);
+            return;
+        }
         ChassisSpeeds chassisSpeeds = new ChassisSpeeds(mag * Math.cos(dir), mag * Math.sin(dir), omega);
         runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
     }
@@ -173,41 +179,73 @@ public class SwerveDrive extends SubsystemBase {
         }
     }
 
-    public Command runTestDrive() {
+    public void toXPosition(boolean optimize) {
+        setRawModuleSetpoints(new SwerveModuleState[] {
+            new SwerveModuleState(0, Rotation2d.fromDegrees(45)),
+            new SwerveModuleState(0, Rotation2d.fromDegrees(-45)),
+            new SwerveModuleState(0, Rotation2d.fromDegrees(-45)),
+            new SwerveModuleState(0, Rotation2d.fromDegrees(45))
+        }, optimize);
+    }
+
+    public Command runToXPosition(boolean optimize) {
         return runOnce(() -> {
-            SwerveModuleState testSwerveState = new SwerveModuleState(Preferences.getDouble("kSwerveTestDrive", SwerveConstants.kDefaultTestDrive),
-                new Rotation2d(Preferences.getDouble("kSwerveTestTurn", SwerveConstants.kDefaultTestTurn))
-            );
-            modules[0].setDesiredState(testSwerveState);
-            modules[1].setDesiredState(testSwerveState);
-            modules[2].setDesiredState(testSwerveState);
-            modules[3].setDesiredState(testSwerveState);
-            // for(SDSSwerveModule module : modules) {
-            //     module.openLoop(
-            //         Preferences.getDouble("kSwerveTestTurn", SwerveConstants.kDefaultTestTurn),
-            //         Preferences.getDouble("kSwerveTestDrive", SwerveConstants.kDefaultTestDrive)
-            //     );
-            // }
+            toX = !toX;
         });
     }
 
-    public Command runOpenTestDrive() {
+    public void setPose(Pose2d pose) {
+        poseEstimator.resetPosition(rawGyroRotation, modulePositions, pose);
+    }
+
+    @AutoLogOutput(key = "Swerve/toX")
+    public boolean isToX() {
+        return toX;
+    }
+
+    // public Command runTestDrive() {
+    //     return runOnce(() -> {
+    //         SwerveModuleState testSwerveState = new SwerveModuleState(Preferences.getDouble("kSwerveTestDrive", SwerveConstants.kDefaultTestDrive),
+    //             new Rotation2d(Preferences.getDouble("kSwerveTestTurn", SwerveConstants.kDefaultTestTurn))
+    //         );
+    //         modules[0].setDesiredState(testSwerveState);
+    //         modules[1].setDesiredState(testSwerveState);
+    //         modules[2].setDesiredState(testSwerveState);
+    //         modules[3].setDesiredState(testSwerveState);
+    //         // for(SDSSwerveModule module : modules) {
+    //         //     module.openLoop(
+    //         //         Preferences.getDouble("kSwerveTestTurn", SwerveConstants.kDefaultTestTurn),
+    //         //         Preferences.getDouble("kSwerveTestDrive", SwerveConstants.kDefaultTestDrive)
+    //         //     );
+    //         // }
+    //     });
+    // }
+
+    // public Command runOpenTestDrive() {
+    //     return runOnce(() -> {
+    //         SwerveModuleState testSwerveState = new SwerveModuleState(Preferences.getDouble("kSwerveTestDrive", SwerveConstants.kDefaultTestDrive),
+    //             new Rotation2d(Preferences.getDouble("kSwerveTestTurn", SwerveConstants.kDefaultTestTurn))
+    //         );
+    //         double drive = testSwerveState.speedMetersPerSecond;
+    //         double turn = testSwerveState.angle.getRadians();
+    //         modules[0].openLoop(turn, drive);
+    //         modules[1].openLoop(turn, drive);
+    //         modules[2].openLoop(turn, drive);
+    //         modules[3].openLoop(turn, drive);
+    //         // for(SDSSwerveModule module : modules) {
+    //         //     module.openLoop(
+    //         //         Preferences.getDouble("kSwerveTestTurn", SwerveConstants.kDefaultTestTurn),
+    //         //         Preferences.getDouble("kSwerveTestDrive", SwerveConstants.kDefaultTestDrive)
+    //         //     );
+    //         // }
+    //     });
+    // }
+
+    public Command runZeroGyro() {
         return runOnce(() -> {
-            SwerveModuleState testSwerveState = new SwerveModuleState(Preferences.getDouble("kSwerveTestDrive", SwerveConstants.kDefaultTestDrive),
-                new Rotation2d(Preferences.getDouble("kSwerveTestTurn", SwerveConstants.kDefaultTestTurn))
-            );
-            double drive = testSwerveState.speedMetersPerSecond;
-            double turn = testSwerveState.angle.getRadians();
-            modules[0].openLoop(turn, drive);
-            modules[1].openLoop(turn, drive);
-            modules[2].openLoop(turn, drive);
-            modules[3].openLoop(turn, drive);
-            // for(SDSSwerveModule module : modules) {
-            //     module.openLoop(
-            //         Preferences.getDouble("kSwerveTestTurn", SwerveConstants.kDefaultTestTurn),
-            //         Preferences.getDouble("kSwerveTestDrive", SwerveConstants.kDefaultTestDrive)
-            //     );
-            // }
+            gyroIO.zeroGyro();
+        }).andThen(new WaitCommand(0.1)).andThen(() -> {
+            poseEstimator.resetRotation(Constants.isRed() ? Rotation2d.kPi : Rotation2d.kZero);
         });
     }
     
@@ -224,9 +262,19 @@ public class SwerveDrive extends SubsystemBase {
             for(SDSSwerveModule module : modules) {
                 module.updateControlConstants();
             }
+            System.out.println("Swerve control constants updated");
         });
     }
 
+    public Command runSetTempPose() {
+        return runOnce(() -> setPose(new Pose2d(
+            Preferences.getDouble("odometry/setPoseX", 0),
+            Preferences.getDouble("odometry/setPoseY", 0),
+            new Rotation2d(Preferences.getDouble("odometry/setPoseRot", 0))
+        )));
+    }
+
+    @AutoLogOutput(key = "Odometry/Pose")
     public Pose2d getPose() {
         return poseEstimator.getEstimatedPosition();
     }
@@ -270,6 +318,7 @@ public class SwerveDrive extends SubsystemBase {
         // loop end
 
         // use updateWithTime if using higher-frequency odometry with timestamps
+        Logger.recordOutput("Swerve/Positions", updatedModulePositions);
         poseEstimator.update(rawGyroRotation, updatedModulePositions);
         gyroDisconnectedAlert.set(!gyroIOInputs.connected && Constants.currentMode != RobotMode.SIM);
     }
