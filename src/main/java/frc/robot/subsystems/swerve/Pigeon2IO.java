@@ -31,8 +31,6 @@ public class Pigeon2IO implements GyroIO {
             100,
             yaw, yawVelocity
         );
-
-        BaseStatusSignal.setUpdateFrequencyForAll(100, pigeon.getYaw());
     }
 
     @Override
