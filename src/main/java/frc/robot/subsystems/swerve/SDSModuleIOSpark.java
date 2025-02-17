@@ -25,7 +25,7 @@ public class SDSModuleIOSpark implements SDSModuleIO {
     private SparkAbsoluteEncoder turnEncoder; // SRX Mag Encoder
     private RelativeEncoder driveEncoder;
 
-    private SparkClosedLoopController turnControlller;
+    private SparkClosedLoopController turnController;
     private SparkClosedLoopController driveController;
 
     private Rotation2d zeroRotation;
@@ -67,7 +67,7 @@ public class SDSModuleIOSpark implements SDSModuleIO {
         turnEncoder = turnMotor.getAbsoluteEncoder();
         driveEncoder = driveMotor.getEncoder();
 
-        turnControlller = turnMotor.getClosedLoopController();
+        turnController = turnMotor.getClosedLoopController();
         driveController = driveMotor.getClosedLoopController();
 
         turnMotor.configure(turnConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
@@ -91,7 +91,7 @@ public class SDSModuleIOSpark implements SDSModuleIO {
     @Override
     public void setTurnPosition(Rotation2d position) {
         double setpoint = MathUtil.inputModulus(position.rotateBy(zeroRotation).getRadians(), 0, 2 * Math.PI);
-        turnControlller.setReference(setpoint, ControlType.kPosition);
+        turnController.setReference(setpoint, ControlType.kPosition);
     }
 
     @Override
