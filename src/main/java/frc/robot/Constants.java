@@ -300,6 +300,20 @@ public class Constants {
 		}
 	}
 
+	// TODO adjust
+	public static class VisionConstants {
+		public static final double linearStdDevBaseline = 0.02;
+		public static final double angularStdDevBaseline = 0.06;
+
+		public static final double linearStdDevMegatag2Factor = 0;
+		public static final double angularStdDevMegatag2Factor = 0;
+
+		public static final double[] cameraStdDevFactors = new double[] {
+			1.0,
+			1.0
+		};
+	}
+
 	public static class OperatorConstants {
 		public static final int kDriverControllerPort = 0;
 		public static final int kAuxControllerPort = 1;
