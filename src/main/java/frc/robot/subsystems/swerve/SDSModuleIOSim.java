@@ -80,11 +80,11 @@ public class SDSModuleIOSim implements SDSModuleIO {
         // TODO: Find the actual moment of inertia of the motor (incl. gearing I believe)
         turnSim =
         new DCMotorSim(
-            LinearSystemId.createDCMotorSystem(DCMotor.getNEO(1), 0.004, 12.8*100),
+            LinearSystemId.createDCMotorSystem(DCMotor.getNEO(1), 0.004, 12.8*12.8*12.8),
             DCMotor.getNEO(1));
         driveSim =
         new DCMotorSim(
-            LinearSystemId.createDCMotorSystem(DCMotor.getNEO(1), 0.025, 6.12*100),
+            LinearSystemId.createDCMotorSystem(DCMotor.getNEO(1), 0.025, 6.12*6.12*6.12),
             DCMotor.getNEO(1));
     }
    
