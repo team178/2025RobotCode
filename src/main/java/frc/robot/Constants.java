@@ -189,6 +189,7 @@ public class Constants {
 				.idleMode(IdleMode.kBrake)
 				.smartCurrentLimit(30)
 				.voltageCompensation(12)
+				.inverted(true) // according to parker
 			; elevatorLeaderConfig.closedLoop
 				.feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
 				.p(elevatorControlConstants.kP(), ClosedLoopSlot.kSlot0)
@@ -213,6 +214,7 @@ public class Constants {
 				.idleMode(IdleMode.kBrake)
 				.smartCurrentLimit(30)
 				.voltageCompensation(12)
+				//! may need to invert this too
 			;
 
             effectorConfig

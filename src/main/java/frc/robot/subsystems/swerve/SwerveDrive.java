@@ -10,7 +10,9 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 
+import choreo.trajectory.SwerveSample;
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -51,6 +53,10 @@ public class SwerveDrive extends SubsystemBase {
     private SwerveDriveKinematics kinematics;
     private SwerveDrivePoseEstimator poseEstimator;
 
+    private PIDController trajVXController;
+    private PIDController trajVYController;
+    private PIDController trajHeadingController;
+
     private double elevatorSpeedFactor;
     private boolean toX;
 
@@ -85,6 +91,10 @@ public class SwerveDrive extends SubsystemBase {
             new Translation2d(-SwerveConstants.kWheelDistanceMeters / 2, -SwerveConstants.kWheelDistanceMeters / 2)  // BR
         );
         poseEstimator = new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, modulePositions, (Constants.isRed() ? new Pose2d(17.548, 8.052, Rotation2d.kPi) : new Pose2d()));
+
+        trajVXController = new PIDController(10, 0, 0);
+        trajVYController = new PIDController(10, 0, 0);
+        trajHeadingController = new PIDController(7.5, 0, 0);
     }
 
     private double adjustAxisInput(double controllerInput, double deadband, double minThreshold, double steepness) {
@@ -195,6 +205,18 @@ public class SwerveDrive extends SubsystemBase {
         return runOnce(() -> {
             toX = !toX;
         });
+    }
+
+    public void followSwerveSample(SwerveSample sample) {
+        Pose2d pose = getPose();
+
+        ChassisSpeeds speeds = new ChassisSpeeds(
+            sample.vx + trajVXController.calculate(pose.getX(), sample.x),
+            sample.vy + trajVYController.calculate(pose.getY(), sample.y),
+            sample.omega + trajHeadingController.calculate(pose.getRotation().getRadians(), sample.heading)
+        );
+
+        runChassisSpeeds(speeds, true, true);
     }
 
     public void setPose(Pose2d pose) {
