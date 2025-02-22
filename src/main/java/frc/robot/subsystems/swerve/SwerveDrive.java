@@ -282,8 +282,8 @@ public class SwerveDrive extends SubsystemBase {
         return poseEstimator.getEstimatedPosition();
     }
 
-    /** stdDevs --> standard deviations (increase for less trust) */
     public void addVisionMeasurement(Pose2d visionMeasurement, double timestamp, Matrix<N3,N1> stdDevs) {
+        // higher standard deviations means vision measurements are trusted less
         poseEstimator.addVisionMeasurement(visionMeasurement, timestamp, stdDevs);
     }
 

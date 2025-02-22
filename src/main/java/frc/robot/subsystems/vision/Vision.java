@@ -7,53 +7,83 @@ import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Vision extends SubsystemBase {
-    private VisionConsumer consumer;
-    private VisionIO[] ios;
-    private VisionIOInputsAutoLogged[] inputs;
-    private Alert[] disconnectedAlerts;
+    private PoseEstimateConsumer consumer;
+    private VisionIOWrapper[] wrappedIOs;
 
-    public Vision(VisionConsumer consumer, VisionIO... ios) {
+    private static final boolean useAtomic = false;
+
+    public Vision(PoseEstimateConsumer consumer, VisionIO... ios) {
         this.consumer = consumer;
-        this.ios = ios;
-        
-        inputs = new VisionIOInputsAutoLogged[ios.length];
-
-        disconnectedAlerts = new Alert[ios.length];
-        for (int i = 0; i < ios.length; i++) {
-            disconnectedAlerts[i] = new Alert("Vision module " + Integer.toString(i) + " disconnected.", AlertType.kWarning);
+        wrappedIOs = new VisionIOWrapper[ios.length];
+        for(int i = 0; i < ios.length; i++) {
+            wrappedIOs[i] = new VisionIOWrapper(
+                ios[i],
+                new VisionIOInputsAutoLogged(),
+                new Alert("Vision module " + ios[i].getLimelightLocation().name + " disconnected.", AlertType.kWarning)
+            );
         }
     }
 
     @Override
     public void periodic() {
-        for (int i = 0; i < ios.length; i++) {
-            ios[i].updateInputs(inputs[i]);
-            Logger.processInputs("Vision/Camera" + Integer.toString(i), inputs[i]);
+        for(VisionIOWrapper wrappedIO : wrappedIOs) {
+            wrappedIO.io.updateOrientation();
+        }
+        NetworkTableInstance.getDefault().flush(); // TODO check if need; increases network traffic, but is recommended?
+        for(VisionIOWrapper wrappedIO : wrappedIOs) {
+            wrappedIO.io.updateInputs(wrappedIO.inputs);
+            Logger.processInputs("Vision/" + wrappedIO.io.getLimelightLocation().name, wrappedIO.inputs);
 
-            disconnectedAlerts[i].set(!inputs[i].connected);
+            wrappedIO.disconnectedAlert.set(!wrappedIO.inputs.connected);
 
-            consumer.sendMeasurement(
-                inputs[i].poseEstimate,
-                Timer.getFPGATimestamp(), // TODO replace with timestamp from inputs
-                VecBuilder.fill(inputs[i].stdDevs[0], inputs[i].stdDevs[0], inputs[i].stdDevs[1])
-            );
-
-            consumer.sendMeasurement(
-                inputs[i].poseEstimate2,
-                Timer.getFPGATimestamp(),
-                VecBuilder.fill(inputs[i].stdDevs2[0], inputs[i].stdDevs2[0], inputs[i].stdDevs2[1])
-            );
+            if(useAtomic) {
+                consumer.accept(
+                    wrappedIO.inputs.lastPoseObservationMT1.pose().toPose2d(),
+                    wrappedIO.inputs.lastTimestampMT1,
+                    convertStdDevs(wrappedIO.inputs.lastStdDevsMT1)
+                );
+                consumer.accept(
+                    wrappedIO.inputs.lastPoseObservationMT2.pose().toPose2d(),
+                    wrappedIO.inputs.lastTimestampMT2,
+                    convertStdDevs(wrappedIO.inputs.lastStdDevsMT2)
+                );
+            } else {
+                if(wrappedIO.inputs.stdDevsMT1.length + wrappedIO.inputs.stdDevsMT2.length != wrappedIO.inputs.poseObservations.length) {
+                    System.out.println("Expected # of pose observations does not match lengths of standard deviations");
+                }
+                for(int i = 0; i < wrappedIO.inputs.stdDevsMT1.length; i++) {
+                    consumer.accept(
+                        wrappedIO.inputs.poseObservations[i].pose().toPose2d(),
+                        wrappedIO.inputs.poseObservations[i].timestamp(),
+                        convertStdDevs(wrappedIO.inputs.stdDevsMT1[i])
+                    );
+                }
+                for(int i = 0; i < wrappedIO.inputs.stdDevsMT2.length; i++) {
+                    consumer.accept(
+                        wrappedIO.inputs.poseObservations[wrappedIO.inputs.stdDevsMT1.length + i].pose().toPose2d(),
+                        wrappedIO.inputs.poseObservations[wrappedIO.inputs.stdDevsMT1.length + i].timestamp(),
+                        convertStdDevs(wrappedIO.inputs.stdDevsMT2[i])
+                    );
+                }
+            }
         }
     }
 
-    @FunctionalInterface
-    public static interface VisionConsumer {
-        public void sendMeasurement(Pose2d visionMeasurement, double timestamp, Matrix<N3,N1> stdDevs);
+    private static Matrix<N3, N1> convertStdDevs(double[] stdDevs) {
+        return stdDevs.length == 2 ? VecBuilder.fill(stdDevs[0], stdDevs[0], stdDevs[1]) : VecBuilder.fill(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
     }
+
+    @FunctionalInterface
+    public static interface PoseEstimateConsumer {
+        public void accept(Pose2d visionMeasurement, double timestamp, Matrix<N3,N1> stdDevs);
+    }
+
+    private static record VisionIOWrapper(VisionIO io, VisionIOInputsAutoLogged inputs, Alert disconnectedAlert) {}
 }
