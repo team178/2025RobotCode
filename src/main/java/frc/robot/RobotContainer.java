@@ -21,6 +21,10 @@ import frc.robot.subsystems.swerve.Pigeon2IO;
 import frc.robot.subsystems.swerve.SDSModuleIO;
 import frc.robot.subsystems.swerve.SDSModuleIOSpark;
 import frc.robot.subsystems.swerve.SwerveDrive;
+import frc.robot.subsystems.vision.LimelightLocations;
+import frc.robot.subsystems.vision.Vision;
+import frc.robot.subsystems.vision.VisionIO;
+import frc.robot.subsystems.vision.VisionIOLimelight;
 
 public class RobotContainer {
     private CommandXboxController driverController;
@@ -29,6 +33,7 @@ public class RobotContainer {
     private SwerveDrive swerve;
     private Elevator elevator;
     private Manipulator manipulator;
+    private Vision vision;
 
     public RobotContainer() {
         Preferences.removeAll();
@@ -48,6 +53,12 @@ public class RobotContainer {
                 );
                 // elevator = new Elevator(new ElevatorIOSpark());
                 // manipulator = new Manipulator(new ManipulatorIOSpark());
+                vision = new Vision(
+                    swerve::addVisionMeasurement,
+                    new VisionIOLimelight(LimelightLocations.FRONT3, swerve.getPose()::getRotation),
+                    new VisionIOLimelight(LimelightLocations.HIGH2PLUS, swerve.getPose()::getRotation),
+                    new VisionIOLimelight(LimelightLocations.SIDE2, swerve.getPose()::getRotation)
+                );
                 break;
             default:
                 swerve = new SwerveDrive(
@@ -58,6 +69,7 @@ public class RobotContainer {
                     new SDSModuleIO() {});
                 // elevator = new Elevator(new ElevatorIO() {});
                 // manipulator = new Manipulator(new ManipulatorIO() {});
+                vision = new Vision((pose, timestamp, stdDevs) -> {}, new VisionIO() {});
                 break;
         }
 
