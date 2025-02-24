@@ -51,14 +51,14 @@ public class RobotContainer {
                     new SDSModuleIOSpark(2),
                     new SDSModuleIOSpark(3)
                 );
-                // elevator = new Elevator(new ElevatorIOSpark());
-                // manipulator = new Manipulator(new ManipulatorIOSpark());
-                vision = new Vision(
-                    swerve::addVisionMeasurement,
-                    new VisionIOLimelight(LimelightLocations.FRONT3, swerve.getPose()::getRotation),
-                    new VisionIOLimelight(LimelightLocations.HIGH2PLUS, swerve.getPose()::getRotation),
-                    new VisionIOLimelight(LimelightLocations.SIDE2, swerve.getPose()::getRotation)
-                );
+                elevator = new Elevator(new ElevatorIOSpark());
+                manipulator = new Manipulator(new ManipulatorIOSpark());
+                // vision = new Vision(
+                //     swerve::addVisionMeasurement,
+                //     new VisionIOLimelight(LimelightLocations.FRONT3, swerve.getPose()::getRotation),
+                //     new VisionIOLimelight(LimelightLocations.HIGH2PLUS, swerve.getPose()::getRotation),
+                //     new VisionIOLimelight(LimelightLocations.SIDE2, swerve.getPose()::getRotation)
+                // );
                 break;
             default:
                 swerve = new SwerveDrive(
@@ -67,9 +67,9 @@ public class RobotContainer {
                     new SDSModuleIO() {},
                     new SDSModuleIO() {},
                     new SDSModuleIO() {});
-                // elevator = new Elevator(new ElevatorIO() {});
-                // manipulator = new Manipulator(new ManipulatorIO() {});
-                vision = new Vision((pose, timestamp, stdDevs) -> {}, new VisionIO() {});
+                elevator = new Elevator(new ElevatorIO() {});
+                manipulator = new Manipulator(new ManipulatorIO() {});
+                // vision = new Vision((pose, timestamp, stdDevs) -> {}, new VisionIO() {});
                 break;
         }
 

@@ -11,6 +11,7 @@ public class Manipulator extends SubsystemBase {
 
     public Manipulator(ManipulatorIO io) {
         this.io = io;
+        inputs = new ManipulatorIOInputsAutoLogged();
     }
 
     public Command runSetManipulatorPosition(ManipulatorPosition position) {

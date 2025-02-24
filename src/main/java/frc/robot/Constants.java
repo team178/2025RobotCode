@@ -65,7 +65,7 @@ public class Constants {
 		public static final double kTurnVelocityConversionFactor = Units.rotationsToRadians(1); // rotations per second -> radians per second (not minutes?)
 
 		public static final double kMaxWheelSpeed = 20; // m/s
-		public static final double kMagVelLimit = 7; // m/s
+		public static final double kMagVelLimit = 5; // m/s (5 seems to be physical limit)
 		public static final double kRotVelLimit = 18; // rad/s
 		// public static final double kDirVelLimit = 10; // rad/s
 		// public static final double kMagAccelLimit = 48; // m/s^2
@@ -101,7 +101,7 @@ public class Constants {
 
 		public static final ControlConstants turnControlConstants = new ControlConstants(
 			"swerveModule/turn",
-			0.3, // 0.3
+			0.6, // 0.3
 			0, // 0, used 0.0001 in the past
 			0,
 			0,
@@ -111,12 +111,12 @@ public class Constants {
 
 		public static final ControlConstants driveControlConstants = new ControlConstants(
 			"swerveModule/drive",
-			0, // 0.01 -> 0.00009
+			0.0001, // 0.01 -> 0.00009
 			0, // 0, used 0.0001 in the past
 			0,
-			0.0145, // 0.145
+			0.01, // 0.145
             0,
-            0 // 0.11
+            0.11 // 0.11
 		);
 
         static {
