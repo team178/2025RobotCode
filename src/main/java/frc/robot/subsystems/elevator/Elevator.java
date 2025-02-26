@@ -25,6 +25,13 @@ public class Elevator extends SubsystemBase {
     public Command runElevatorOpenLoopPreferences() {
         return runOnce(() -> {elevatorIO.setElevatorOpenLoop(Preferences.getDouble("ele/elevatorvolts", 0)); System.out.println(Preferences.getDouble("ele/elevatorvolts", 0));});
     }
+    
+    public Command runaElevatorOpenLoopPreferences() {
+        return runOnce(() -> {
+            elevatorIO.setElevatorOpenLoop(-Preferences.getDouble("ele/elevatorvolts", 0));
+            System.out.println(-Preferences.getDouble("ele/elevatorvolts", 0));
+        });
+    }
 
     public Command runToElevatorPosition(ElevatorPosition position) {
         return runOnce(() -> elevatorIO.setElevatorPosition(position));
@@ -46,12 +53,20 @@ public class Elevator extends SubsystemBase {
         return runOnce(() -> elevatorIO.setEffectorVolts(Preferences.getDouble("ele/leftvolts", 0), Preferences.getDouble("ele/rightvolts", 0)));
     }
 
+    public Command runaEffectorPreferences() {
+        return runOnce(() -> elevatorIO.setEffectorVolts(-Preferences.getDouble("ele/leftvolts", 0), Preferences.getDouble("ele/rightvolts", 0)));
+    }
+
     public boolean getUpperPhotosensor() {
         return elevatorIOInputs.upperPhotosensor;
     }
 
     public boolean getLowerPhotosensor() {
         return elevatorIOInputs.lowerPhotosensor;
+    }
+
+    public Command runUpdateControlConstants() {
+        return runOnce(() -> elevatorIO.updateControlConstants());
     }
 
     @Override

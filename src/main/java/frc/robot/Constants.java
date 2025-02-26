@@ -162,21 +162,22 @@ public class Constants {
 		public static final int kRightEffectorCANID = 14;
 		public static final int kFunnelMotorCANID = 15;
 
-		public static final int kHighLimitDIO = 1;
-		public static final int kLowLimitDIO = 2;
-		public static final int kUpperPhotosensorDIO = 3;
-		public static final int kLowerPhotosensorDIO = 4;
+		public static final int kHighLimitDIO = 0;
+		public static final int kLowLimitDIO = 1;
+		public static final int kUpperPhotosensorDIO = 9;
+		public static final int kLowerPhotosensorDIO = 2;
 
 		public static final double kSprocketPitchDiameter = Units.inchesToMeters(1.7567); // meters
 		public static final double kElevatorPositionConversionFactor = kSprocketPitchDiameter * Math.PI;
+		public static final double kElevatorPositionConversionFactorInternal = kSprocketPitchDiameter * Math.PI / 27;
 
 		public static final ControlConstants elevatorControlConstants = new ControlConstants(
 			"elevator",
-			0.0001, // to test
+			30, // to test
 			0,
 			0,
 			0,
-			0,
+			0.22,
 			0
 		);
 		
@@ -189,9 +190,9 @@ public class Constants {
 				.idleMode(IdleMode.kBrake)
 				.smartCurrentLimit(30)
 				.voltageCompensation(12)
-				.inverted(true) // according to parker
+				.inverted(true)
 			; elevatorLeaderConfig.closedLoop
-				.feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
+				// .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
 				.p(elevatorControlConstants.kP(), ClosedLoopSlot.kSlot0)
 				.i(elevatorControlConstants.kI(), ClosedLoopSlot.kSlot0)
 				.d(elevatorControlConstants.kD(), ClosedLoopSlot.kSlot0)
@@ -204,9 +205,13 @@ public class Constants {
 				.outputRange(-1, 1, ClosedLoopSlot.kSlot0) // no limit
 				.outputRange(0, 1, ClosedLoopSlot.kSlot1) // low limit
 				.outputRange(-1, 0.1, ClosedLoopSlot.kSlot2) // high limit
-			; elevatorLeaderConfig.absoluteEncoder
-				.positionConversionFactor(kElevatorPositionConversionFactor)
-				.velocityConversionFactor(kElevatorPositionConversionFactor)
+			// ; elevatorLeaderConfig.absoluteEncoder
+			// 	.positionConversionFactor(kElevatorPositionConversionFactor)
+			// 	.velocityConversionFactor(kElevatorPositionConversionFactor)
+			// 	.inverted(true)
+			; elevatorLeaderConfig.encoder
+				.positionConversionFactor(kElevatorPositionConversionFactorInternal)
+				.velocityConversionFactor(kElevatorPositionConversionFactorInternal)
 			;
 
 			elevatorFollowerConfig

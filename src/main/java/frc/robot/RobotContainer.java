@@ -12,6 +12,7 @@ import frc.robot.Constants.OperatorConstants;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
+import frc.robot.subsystems.elevator.ElevatorPosition;
 import frc.robot.subsystems.manipulator.Manipulator;
 import frc.robot.subsystems.manipulator.ManipulatorIO;
 import frc.robot.subsystems.manipulator.ManipulatorIOSpark;
@@ -95,16 +96,20 @@ public class RobotContainer {
         // driverController.a().onFalse(swerve.runStopDrive());
         // driverController.x().onTrue(swerve.runOpenTestDrive());
         // driverController.x().onFalse(swerve.runStopDrive());
-        driverController.b().onTrue(swerve.runUpdateControlConstants());
+        driverController.b().onTrue(swerve.runUpdateControlConstants().andThen(elevator.runUpdateControlConstants()));
         driverController.back().onTrue(swerve.runToXPosition(true));
         driverController.y().onTrue(swerve.runZeroGyro());
         driverController.start().onTrue(swerve.runSetTempPose());
 
         driverController.povUp().onTrue(elevator.runEffectorPreferences());
         driverController.povUp().onFalse(elevator.runEffector(0, 0));
+        driverController.povDown().onTrue(elevator.runaEffectorPreferences());
+        driverController.povDown().onFalse(elevator.runEffector(0, 0));
 
-        driverController.povDown().onTrue(elevator.runElevatorOpenLoopPreferences());
-        driverController.povDown().onFalse(elevator.runElevatorOpenLoop(0));
+        driverController.povLeft().onTrue(elevator.runToElevatorPosition(ElevatorPosition.HOME));
+        driverController.povLeft().onFalse(elevator.runElevatorOpenLoop(0));
+        driverController.povRight().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L2));
+        driverController.povRight().onFalse(elevator.runElevatorOpenLoop(0));
 
         // auxController.a().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.HOME));
         // auxController.b().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.INTAKE));

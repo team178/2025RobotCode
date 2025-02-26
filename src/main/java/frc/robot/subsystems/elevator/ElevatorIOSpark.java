@@ -1,5 +1,7 @@
 package frc.robot.subsystems.elevator;
 
+import org.littletonrobotics.junction.Logger;
+
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkAbsoluteEncoder;
@@ -10,9 +12,11 @@ import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.wpilibj.DigitalInput;
 import frc.robot.Constants.ElevatorConstants;
+import frc.robot.Constants.SwerveModuleConstants;
 
 public class ElevatorIOSpark implements ElevatorIO {
     private SparkMax elevatorLeaderMotor;
@@ -21,7 +25,7 @@ public class ElevatorIOSpark implements ElevatorIO {
     private SparkMax rightEffectorMotor;
     private SparkMax funnelMotor;
 
-    private SparkAbsoluteEncoder elevatorEncoder;
+    private RelativeEncoder elevatorEncoder;
     private RelativeEncoder leftEffectorEncoder;
     private RelativeEncoder rightEffectorEncoder;
     private RelativeEncoder funnelEncoder;
@@ -51,7 +55,7 @@ public class ElevatorIOSpark implements ElevatorIO {
         rightEffectorMotor.setCANTimeout(0);
         funnelMotor.setCANTimeout(0);
 
-        elevatorEncoder = elevatorLeaderMotor.getAbsoluteEncoder();
+        elevatorEncoder = elevatorLeaderMotor.getEncoder();
         leftEffectorEncoder = leftEffectorMotor.getEncoder();
         rightEffectorEncoder = rightEffectorMotor.getEncoder();
         funnelEncoder = funnelMotor.getEncoder();
@@ -106,9 +110,13 @@ public class ElevatorIOSpark implements ElevatorIO {
     public void setElevatorPosition(ElevatorPosition position) {
         desiredPosition = position;
         double ffVolts = ElevatorConstants.elevatorControlConstants.kG();
+        // elevatorController.setReference(
+        //     position.height, ControlType.kPosition,
+        //     (lowLimit.get()) ? ClosedLoopSlot.kSlot1 : ((highLimit.get()) ? ClosedLoopSlot.kSlot2 : ClosedLoopSlot.kSlot0),
+        //     ffVolts, ArbFFUnits.kVoltage);
         elevatorController.setReference(
             position.height, ControlType.kPosition,
-            (lowLimit.get()) ? ClosedLoopSlot.kSlot1 : ((highLimit.get()) ? ClosedLoopSlot.kSlot2 : ClosedLoopSlot.kSlot0),
+            ClosedLoopSlot.kSlot0,
             ffVolts, ArbFFUnits.kVoltage);
     }
 
@@ -139,5 +147,18 @@ public class ElevatorIOSpark implements ElevatorIO {
     public void setFunnelMotorVolts(double volts) {
         funnelDesiredVolts = volts;
         funnelMotor.setVoltage(volts);
+    }
+
+    @Override
+    public void updateControlConstants() {
+        SparkMaxConfig config = new SparkMaxConfig();
+
+        config.closedLoop
+            .p(ElevatorConstants.elevatorControlConstants.kP())
+            .i(ElevatorConstants.elevatorControlConstants.kI())
+            .d(ElevatorConstants.elevatorControlConstants.kD())
+        ;
+
+        elevatorLeaderMotor.configure(config, ResetMode.kNoResetSafeParameters, PersistMode.kNoPersistParameters);
     }
 }

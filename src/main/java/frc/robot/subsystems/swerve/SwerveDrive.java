@@ -64,6 +64,14 @@ public class SwerveDrive extends SubsystemBase {
     private double elevatorSpeedFactor;
     private boolean toX;
 
+    private BooleanSupplier goAimReef;
+    private BooleanSupplier goAimProcessor;
+    private BooleanSupplier goAimStation;
+    
+    private BooleanSupplier goPosLeftReef;
+    private BooleanSupplier goPosRightReef;
+    private BooleanSupplier goPosProcessor;
+
     //! Vision to be added
 
     public SwerveDrive(GyroIO gyroIO, SDSModuleIO FLModuleIO, SDSModuleIO FRModuleIO, SDSModuleIO BLModuleIO, SDSModuleIO BRModuleIO) {
@@ -99,6 +107,18 @@ public class SwerveDrive extends SubsystemBase {
         trajVXController = new PIDController(10, 0, 0);
         trajVYController = new PIDController(10, 0, 0);
         trajHeadingController = new PIDController(7.5, 0, 0);
+    }
+
+    public void setToAimSuppliers(BooleanSupplier goAimReef, BooleanSupplier goAimProcessor, BooleanSupplier goAimStation) {
+        this.goAimReef = goAimReef;
+        this.goAimProcessor = goAimProcessor;
+        this.goAimProcessor = goAimStation;
+    }
+
+    public void setToPosSuppliers(BooleanSupplier goPosLeftReef, BooleanSupplier goPosRightReef, BooleanSupplier goPosProcessor) {
+        this.goPosLeftReef = goPosLeftReef;
+        this.goPosRightReef = goPosRightReef;
+        this.goPosProcessor = goPosProcessor;
     }
 
     private double adjustAxisInput(double controllerInput, double deadband, double minThreshold, double steepness) {
@@ -168,6 +188,12 @@ public class SwerveDrive extends SubsystemBase {
         runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
     }
 
+    public void applyPresetRotation(ChassisSpeeds chassisSpeeds) {
+        if(goAimReef.getAsBoolean()) {
+
+        }
+    }
+
     public void runChassisSpeeds(ChassisSpeeds chassisSpeeds, boolean fieldRelative, boolean optimize) {
         ChassisSpeeds adjustedSpeeds = chassisSpeeds;
         if(fieldRelative) {
@@ -208,6 +234,7 @@ public class SwerveDrive extends SubsystemBase {
     public Command runToXPosition(boolean optimize) {
         return runOnce(() -> {
             toX = !toX;
+            System.out.println("tox");
         });
     }
 
