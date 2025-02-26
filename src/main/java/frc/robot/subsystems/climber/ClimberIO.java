@@ -18,7 +18,9 @@ public interface ClimberIO {
 
     public default void setClimberPosition(ClimberPosition climberPosition) {}
     
-    public default void setVolts(double volts) {}
-
+    public default void setClimberVolts(boolean low, boolean high) {}
+    
     public default void updateControlConstants() {}
+
+    public default void setToggle(boolean toggle) {}
 }

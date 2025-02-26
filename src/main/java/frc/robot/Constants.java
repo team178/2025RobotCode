@@ -282,14 +282,20 @@ public class Constants {
 	public static class ClimberConstants { // CAN ID range 25-29
 		public static final int kClimberMotorCANID = 25;
 
+		public static final double kEncoderConversionFactor = 2*Math.PI;
+		public static final double climberLowVolts = 1;   // Temp
+		public static final double climberHighVolts = 5;   // Temp
+
 		public static final SparkMaxConfig climberConfig = new SparkMaxConfig();
 
 		static {
 			climberConfig
 				.idleMode(IdleMode.kBrake)
 				.smartCurrentLimit(30)
-				.voltageCompensation(12)
-			;
+				.voltageCompensation(12);
+			climberConfig.absoluteEncoder
+				.positionConversionFactor(kEncoderConversionFactor)
+				.velocityConversionFactor(kEncoderConversionFactor);
 		}
 	}
 

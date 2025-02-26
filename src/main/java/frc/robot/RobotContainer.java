@@ -10,6 +10,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.subsystems.climber.Climber;
+import frc.robot.subsystems.climber.ClimberIOSpark;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
@@ -26,10 +28,14 @@ public class RobotContainer {
     private SwerveDrive swerve;
     private Elevator elevator;
 
+    private Climber climber;
+
     public RobotContainer() {
         Preferences.removeAll();
         driverController = new CommandXboxController(OperatorConstants.kDriverControllerPort);
         auxController = new CommandXboxController(OperatorConstants.kAuxControllerPort);
+
+        climber = new Climber(new ClimberIOSpark());
 
         switch(Constants.currentMode) {
             case REAL:
@@ -72,6 +78,8 @@ public class RobotContainer {
         driverController.x().onTrue(swerve.runOpenTestDrive());
         driverController.x().onFalse(swerve.runStopDrive());
         driverController.b().onTrue(swerve.runUpdateControlConstants());
+
+        climber.setDefaultCommand(climber.runClimber(auxController.a()::getAsBoolean, auxController.b()::getAsBoolean));
     }
 
     public Command getAutonomousCommand() {
