@@ -52,7 +52,7 @@ public class RobotContainer {
                     new SDSModuleIOSpark(3)
                 );
                 elevator = new Elevator(new ElevatorIOSpark());
-                manipulator = new Manipulator(new ManipulatorIOSpark());
+                // manipulator = new Manipulator(new ManipulatorIOSpark());
                 // vision = new Vision(
                 //     swerve::addVisionMeasurement,
                 //     new VisionIOLimelight(LimelightLocations.FRONT3, swerve.getPose()::getRotation),
@@ -68,7 +68,7 @@ public class RobotContainer {
                     new SDSModuleIO() {},
                     new SDSModuleIO() {});
                 elevator = new Elevator(new ElevatorIO() {});
-                manipulator = new Manipulator(new ManipulatorIO() {});
+                // manipulator = new Manipulator(new ManipulatorIO() {});
                 // vision = new Vision((pose, timestamp, stdDevs) -> {}, new VisionIO() {});
                 break;
         }
@@ -85,6 +85,11 @@ public class RobotContainer {
             driverController.leftBumper()::getAsBoolean,
             driverController.rightBumper()::getAsBoolean
         ));
+        // swerve.setDefaultCommand(swerve.runSimOdometryMoveBy(
+        //     driverController::getLeftX,
+        //     driverController::getLeftY,
+        //     driverController::getRightX
+        // ));
 
         // driverController.a().onTrue(swerve.runTestDrive());
         // driverController.a().onFalse(swerve.runStopDrive());
@@ -94,6 +99,12 @@ public class RobotContainer {
         driverController.back().onTrue(swerve.runToXPosition(true));
         driverController.y().onTrue(swerve.runZeroGyro());
         driverController.start().onTrue(swerve.runSetTempPose());
+
+        driverController.povUp().onTrue(elevator.runEffectorPreferences());
+        driverController.povUp().onFalse(elevator.runEffector(0, 0));
+
+        driverController.povDown().onTrue(elevator.runElevatorOpenLoopPreferences());
+        driverController.povDown().onFalse(elevator.runElevatorOpenLoop(0));
 
         // auxController.a().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.HOME));
         // auxController.b().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.INTAKE));

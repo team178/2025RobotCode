@@ -17,6 +17,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -33,6 +34,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
+import frc.robot.Constants.FieldConstants;
 import frc.robot.Constants.RobotMode;
 import frc.robot.Constants.SwerveConstants;
 
@@ -56,6 +58,8 @@ public class SwerveDrive extends SubsystemBase {
     private PIDController trajVXController;
     private PIDController trajVYController;
     private PIDController trajHeadingController;
+
+    private FieldZones fieldZone;
 
     private double elevatorSpeedFactor;
     private boolean toX;
@@ -299,6 +303,13 @@ public class SwerveDrive extends SubsystemBase {
         )));
     }
 
+    // public Command runSimOdometryMoveBy(DoubleSupplier x, DoubleSupplier y, DoubleSupplier omega) {
+    //     return run(() -> {
+    //         setPose(getPose().plus(new Transform2d(x.getAsDouble() / 10000, -y.getAsDouble() / 10000, new Rotation2d(-omega.getAsDouble() / 10000))));
+    //         // System.out.println("idk");
+    //     });
+    // }
+
     @AutoLogOutput(key = "Odometry/Pose")
     public Pose2d getPose() {
         return poseEstimator.getEstimatedPosition();
@@ -307,6 +318,20 @@ public class SwerveDrive extends SubsystemBase {
     public void addVisionMeasurement(Pose2d visionMeasurement, double timestamp, Matrix<N3,N1> stdDevs) {
         // higher standard deviations means vision measurements are trusted less
         poseEstimator.addVisionMeasurement(visionMeasurement, timestamp, stdDevs);
+    }
+
+    public static FieldZones getZoneFromRotation(Rotation2d rotation) {
+        int numbered = (int) ((rotation.getDegrees() + 360 + 30) % 360) / 60;
+        boolean isRed = Constants.isRed();
+        switch(numbered) {
+            case 0: return isRed ? FieldZones.RED_CLOSE       : FieldZones.BLUE_FAR;
+            case 1: return isRed ? FieldZones.RED_CLOSE_RIGHT : FieldZones.BLUE_FAR_LEFT;
+            case 2: return isRed ? FieldZones.RED_FAR_RIGHT   : FieldZones.BLUE_CLOSE_LEFT;
+            case 3: return isRed ? FieldZones.RED_FAR         : FieldZones.BLUE_CLOSE;
+            case 4: return isRed ? FieldZones.RED_FAR_LEFT    : FieldZones.BLUE_CLOSE_RIGHT;
+            case 5: return isRed ? FieldZones.RED_CLOSE_LEFT  : FieldZones.BLUE_FAR_RIGHT;
+            default: return FieldZones.OPPOSITE;
+        }
     }
 
     @Override
@@ -351,5 +376,18 @@ public class SwerveDrive extends SubsystemBase {
         Logger.recordOutput("Swerve/Positions", updatedModulePositions);
         poseEstimator.update(rawGyroRotation, updatedModulePositions);
         gyroDisconnectedAlert.set(!gyroIOInputs.connected && Constants.currentMode != RobotMode.SIM);
+
+        fieldZone =
+            (
+                poseEstimator.getEstimatedPosition().getX() - FieldConstants.fieldWidth / 2 // if positive, on red side
+            )
+                * (Constants.isRed() ? -1 : 1) > 0 ? FieldZones.OPPOSITE
+            : getZoneFromRotation(
+                poseEstimator.getEstimatedPosition().getTranslation().minus(
+                    Constants.isRed() ? FieldConstants.reefCenterRed : FieldConstants.reefCenterBlue)
+                    .getAngle()
+            )
+        ;
+        Logger.recordOutput("Zone", fieldZone);
     }
 }

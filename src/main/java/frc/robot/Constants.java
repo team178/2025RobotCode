@@ -316,4 +316,12 @@ public class Constants {
 		public static final int kDriverControllerPort = 0;
 		public static final int kAuxControllerPort = 1;
 	}
+
+	public static class FieldConstants {
+		public static final double fieldWidth = 17.548; // m
+		public static final double fieldHeight = 8.052; // m
+
+		public static final Translation2d reefCenterBlue = new Translation2d(4.5, 4.03);
+		public static final Translation2d reefCenterRed = new Translation2d(13.1, 4.03);
+	}
 }
