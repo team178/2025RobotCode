@@ -10,7 +10,7 @@ import com.revrobotics.spark.SparkLowLevel.MotorType;
 
 public class ClimberIOSpark implements ClimberIO {
     private SparkMax climberMotor;
-    
+
     public ClimberIOSpark() {
         climberMotor = new SparkMax(ClimberConstants.kClimberMotorCANID, MotorType.kBrushless);
         climberMotor.setCANTimeout(0);
@@ -18,6 +18,7 @@ public class ClimberIOSpark implements ClimberIO {
         climberMotor.configure(ClimberConstants.climberConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
     
+    @Override
     public void setClimberVolts(boolean low, boolean high) {
         if(low) {
             climberMotor.setVoltage(ClimberConstants.climberLowVolts);
