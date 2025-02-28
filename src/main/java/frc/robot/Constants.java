@@ -1,6 +1,9 @@
 package frc.robot;
 
 import com.revrobotics.spark.config.SparkMaxConfig;
+
+import static edu.wpi.first.units.Units.Kilo;
+
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
@@ -282,19 +285,44 @@ public class Constants {
 	public static class ClimberConstants { // CAN ID range 25-29
 		public static final int kClimberMotorCANID = 25;
 
-		public static final double climberLowVolts = 1;   // Temp
-		public static final double climberHighVolts = 5;   // Temp
+		// public static final double climberLowVolts = 1;   // Temp
+		// public static final double climberHighVolts = 5;   // Temp
 
-		public static final SparkMaxConfig climberConfig = new SparkMaxConfig();
+		public static final double upVolts = 0;
+		public static final double downVolts = 0;
+
+		public static final SparkMaxConfig climberSetConfig = new SparkMaxConfig();
+
+		public static final double kEncoderConversionFactor = 1 * 2 * Math.PI;
+
+		public static final double kSetP = 0;
+		public static final double kSetI = 0;
+		public static final double kSetD = 0;
+
+		public static final double kSetG = 0;
+		public static final double kClimbG = 0;
+		public static final double kHeheG = 0;
+
+		public static final double verticalEncoderValue = 0;
+		public static final double setEncoderValue = 0;
+
+		public static final double maxDownVel = 0;
+		public static final double maxUpVel = 0;
 
 		static {
-			climberConfig
+			climberSetConfig
 				.idleMode(IdleMode.kBrake)
 				.smartCurrentLimit(30)
 				.voltageCompensation(12);
-			// climberConfig.absoluteEncoder
-			// 	.positionConversionFactor(kEncoderConversionFactor)
-			// 	.velocityConversionFactor(kEncoderConversionFactor);
+			climberSetConfig.encoder
+				.positionConversionFactor(kEncoderConversionFactor);
+			climberSetConfig.closedLoop
+				.feedbackSensor((FeedbackSensor.kPrimaryEncoder))
+				.p(kSetP)
+				.i(kSetP)
+				.d(kSetD)
+				.outputRange(-1, 1);
+
 		}
 	}
 
@@ -302,4 +330,5 @@ public class Constants {
 		public static final int kDriverControllerPort = 0;
 		public static final int kAuxControllerPort = 1;
 	}
+
 }

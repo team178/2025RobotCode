@@ -23,4 +23,8 @@ public interface ClimberIO {
     // public default void updateControlConstants() {}
 
     // public default void setToggle(boolean toggle) {}
+
+    public default void climberInputs(boolean set, boolean up, boolean down){}
+
+    public default void updateKG() {}
 }
