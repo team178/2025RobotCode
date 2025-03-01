@@ -12,7 +12,9 @@ public class Climber extends SubsystemBase{
     private ClimberIO climber;
 
     public Climber(ClimberIO climberIO) {
-        Preferences.initDouble("volts",0.1);
+        Preferences.initDouble("volts",0);
+        Preferences.initDouble("kG", 0);
+        Preferences.initDouble("P",0.1);
         this.climber = climberIO;  
     }
 
@@ -27,20 +29,29 @@ public class Climber extends SubsystemBase{
     }
 
     public Command runUp() {
-        return runOnce( () -> climber.setVolts(Preferences.getDouble("volts",0.1)));
+        return runOnce( () -> climber.setVolts(Preferences.getDouble("volts",0)));
     }
 
     public Command runDown() {
-        return runOnce(() -> climber.setVolts(-Preferences.getDouble("volts",0.1)));
+        return runOnce(() -> climber.setVolts(-Preferences.getDouble("volts",0)));
     }
 
     public Command stop() {
-        return runOnce(() -> climber.setVolts(Preferences.getDouble("volts", 0)));
+        return runOnce(() -> climber.setVolts(0));
+    }
+
+    public Command gravity() {
+        return runOnce(() -> climber.setVolts(Preferences.getDouble("kG",0)));
+    }
+
+    public Command pid() {
+        return runOnce(() -> climber.setReference(Preferences.getDouble("P", 0)));
     }
     
     @Override
     public void periodic() {
         climber.update();
         SmartDashboard.putNumber("encoder position", climber.getPos());
+
     }
 }

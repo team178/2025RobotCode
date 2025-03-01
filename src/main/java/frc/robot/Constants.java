@@ -297,7 +297,7 @@ public class Constants {
 		 * minVel
 		 * maxVel
 		 */
-
+	
 		public static final int kClimberMotorCANID = 25;
 
 		public static final double upVolts = 0;

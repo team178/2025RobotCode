@@ -87,6 +87,9 @@ public class RobotContainer {
         auxController.b().onTrue(climber.runDown());
         auxController.a().onFalse(climber.stop());
         auxController.b().onFalse(climber.stop());
+
+        auxController.x().onTrue(climber.gravity());
+        auxController.x().onFalse(climber.stop());
     }
 
     public Command getAutonomousCommand() {
