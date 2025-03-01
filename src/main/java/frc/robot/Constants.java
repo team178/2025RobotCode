@@ -300,9 +300,6 @@ public class Constants {
 
 		public static final int kClimberMotorCANID = 25;
 
-		// public static final double climberLowVolts = 1;   // Temp
-		// public static final double climberHighVolts = 5;   // Temp
-
 		public static final double upVolts = 0;
 		public static final double downVolts = 0;
 
