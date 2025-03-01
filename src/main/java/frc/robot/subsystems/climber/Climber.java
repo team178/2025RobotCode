@@ -1,7 +1,6 @@
 package frc.robot.subsystems.climber;
 
 import java.util.function.BooleanSupplier;
-import java.util.prefs.Preferences;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;

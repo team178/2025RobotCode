@@ -5,9 +5,6 @@ import frc.robot.Constants.ClimberConstants;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkClosedLoopController;
 import com.revrobotics.spark.SparkMax;
-import com.revrobotics.spark.SparkRelativeEncoder;
-
-import static edu.wpi.first.units.Units.Volts;
 
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.spark.SparkBase.ControlType;
@@ -21,7 +18,6 @@ public class ClimberIOSpark implements ClimberIO {
     private SparkMax climberMotor;
     private RelativeEncoder encoder;
     private SparkClosedLoopController pid;
-    // private SparkClosedLoopController motorPID;
 
     private boolean prevSet;
     private boolean prevUp;
@@ -52,19 +48,6 @@ public class ClimberIOSpark implements ClimberIO {
         isLocked = true;
         
     }
-    
-    // @Override 
-    // public void setClimberVolts(boolean low, boolean high) {
-    //     if(low) {
-    //         climberMotor.setVoltage(ClimberConstants.climberLowVolts);
-    //     }  
-    //     else if(high) {
-    //         climberMotor.setVoltage(ClimberConstants.climberHighVolts);
-    //     }
-    //     else{
-    //         climberMotor.setVoltage(0);
-    //     }
-    // }
 
     @Override
     public void climberInputs(boolean set, boolean up, boolean down) {

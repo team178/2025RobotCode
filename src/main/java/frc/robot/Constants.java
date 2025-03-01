@@ -2,8 +2,6 @@ package frc.robot;
 
 import com.revrobotics.spark.config.SparkMaxConfig;
 
-import static edu.wpi.first.units.Units.Kilo;
-
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
