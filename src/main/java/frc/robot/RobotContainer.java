@@ -79,7 +79,12 @@ public class RobotContainer {
         driverController.x().onFalse(swerve.runStopDrive());
         driverController.b().onTrue(swerve.runUpdateControlConstants());
 
-        climber.setDefaultCommand(climber.runClimber(auxController.a()::getAsBoolean, auxController.b()::getAsBoolean));
+        climber.setDefaultCommand(climber.runClimber(
+            auxController.b()::getAsBoolean,
+            auxController.x()::getAsBoolean,
+            auxController.y()::getAsBoolean,
+            auxController.a()::getAsBoolean
+        ));
     }
 
     public Command getAutonomousCommand() {

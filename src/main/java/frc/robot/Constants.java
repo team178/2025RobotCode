@@ -283,6 +283,23 @@ public class Constants {
 	}
 
 	public static class ClimberConstants { // CAN ID range 25-29
+
+		/*
+		 * To Find:
+		 * initialEncoderValue
+		 * setEncoderValue
+		 * minPos
+		 * maxPos
+		 * kSetG
+		 * kSetP
+		 * kLightG
+		 * downVolts
+		 * upVolts
+		 * kClimbG
+		 * minVel
+		 * maxVel
+		 */
+
 		public static final int kClimberMotorCANID = 25;
 
 		// public static final double climberLowVolts = 1;   // Temp
@@ -293,7 +310,7 @@ public class Constants {
 
 		public static final SparkMaxConfig climberSetConfig = new SparkMaxConfig();
 
-		public static final double kEncoderConversionFactor = 1 * 2 * Math.PI;
+		// public static final double kEncoderConversionFactor = 1 * 2 * Math.PI;
 
 		public static final double kSetP = 0;
 		public static final double kSetI = 0;
@@ -301,28 +318,29 @@ public class Constants {
 
 		public static final double kSetG = 0;
 		public static final double kClimbG = 0;
-		public static final double kHeheG = 0;
+		public static final double kLightG = 0;
 
-		public static final double verticalEncoderValue = 0;
 		public static final double setEncoderValue = 0;
+		public static final double initialEncoderValue = 0;
 
-		public static final double maxDownVel = 0;
-		public static final double maxUpVel = 0;
+		public static final double minPos = 0;
+		public static final double maxPos = 0;
+
+		public static final double maxVel = 0;
+		public static final double minVel = 0;
 
 		static {
 			climberSetConfig
 				.idleMode(IdleMode.kBrake)
 				.smartCurrentLimit(30)
 				.voltageCompensation(12);
-			climberSetConfig.encoder
-				.positionConversionFactor(kEncoderConversionFactor);
+			// climberSetConfig.encoder
+				// .positionConversionFactor(kEncoderConversionFactor);
 			climberSetConfig.closedLoop
 				.feedbackSensor((FeedbackSensor.kPrimaryEncoder))
 				.p(kSetP)
 				.i(kSetP)
-				.d(kSetD)
-				.outputRange(-1, 1);
-
+				.d(kSetD);
 		}
 	}
 

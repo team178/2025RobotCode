@@ -26,5 +26,7 @@ public interface ClimberIO {
 
     public default void climberInputs(boolean set, boolean up, boolean down){}
 
-    public default void updateKG() {}
+    public default void update() {}
+
+    public default double getPos() {return 0;}
 }
