@@ -135,5 +135,4 @@ public class ClimberIOSpark implements ClimberIO {
     public double getPos() {
         return encoder.getPosition();
     }
-
 }
