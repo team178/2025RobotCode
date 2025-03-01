@@ -78,6 +78,11 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
+        swerve.setToAimSuppliers(
+            driverController.x()::getAsBoolean,
+            driverController.b()::getAsBoolean,
+            driverController.a()::getAsBoolean
+        );
         swerve.setDefaultCommand(swerve.runDriveInputs(
             driverController::getLeftX,
             driverController::getLeftY,
@@ -86,6 +91,11 @@ public class RobotContainer {
             driverController.leftBumper()::getAsBoolean,
             driverController.rightBumper()::getAsBoolean
         ));
+
+        driverController.y().onTrue(swerve.runZeroGyro());
+        driverController.back().onTrue(swerve.runToXPosition(true));
+        
+
         // swerve.setDefaultCommand(swerve.runSimOdometryMoveBy(
         //     driverController::getLeftX,
         //     driverController::getLeftY,
@@ -97,8 +107,6 @@ public class RobotContainer {
         // driverController.x().onTrue(swerve.runOpenTestDrive());
         // driverController.x().onFalse(swerve.runStopDrive());
         driverController.b().onTrue(swerve.runUpdateControlConstants().andThen(elevator.runUpdateControlConstants()));
-        driverController.back().onTrue(swerve.runToXPosition(true));
-        driverController.y().onTrue(swerve.runZeroGyro());
         driverController.start().onTrue(swerve.runSetTempPose());
 
         driverController.povUp().onTrue(elevator.runEffectorPreferences());
@@ -106,14 +114,22 @@ public class RobotContainer {
         driverController.povDown().onTrue(elevator.runaEffectorPreferences());
         driverController.povDown().onFalse(elevator.runEffector(0, 0));
 
-        driverController.povLeft().onTrue(elevator.runToElevatorPosition(ElevatorPosition.HOME));
+        driverController.povLeft().onTrue(elevator.runElevatorOpenLoopPreferences());
         driverController.povLeft().onFalse(elevator.runElevatorOpenLoop(0));
-        driverController.povRight().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L2));
+        driverController.povRight().onTrue(elevator.runaElevatorOpenLoopPreferences());
         driverController.povRight().onFalse(elevator.runElevatorOpenLoop(0));
 
         // auxController.a().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.HOME));
         // auxController.b().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.INTAKE));
         // auxController.x().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.CARRY));
+
+        auxController.b().onTrue(elevator.runToElevatorPosition(ElevatorPosition.HOME));
+        auxController.x().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L2));
+        // auxController.y().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L3));
+        auxController.leftBumper().onTrue(elevator.runEffector(-4, 4));
+        auxController.leftBumper().onFalse(elevator.runEffector(0, 0));
+        auxController.leftTrigger().onTrue(elevator.runEffector(-8, 4));
+        auxController.leftTrigger().onFalse(elevator.runEffector(0, 0));
     }
 
     public Command getAutonomousCommand() {

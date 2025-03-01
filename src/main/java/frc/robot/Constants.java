@@ -12,6 +12,9 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.RobotBase;
 import frc.robot.util.ControlConstants;
@@ -29,6 +32,23 @@ public class Constants {
 	}
 	public static final RobotMode simMode = RobotMode.SIM;
 	public static final RobotMode currentMode = RobotBase.isReal() ? RobotMode.REAL : simMode;
+
+	public static enum FieldType {
+		ANDYMARK, WELDED
+	}
+
+	public static final SendableChooser<FieldType> kFieldType = new SendableChooser<>();
+
+	static {
+		kFieldType.setDefaultOption("AndyMark Field", FieldType.ANDYMARK);
+		kFieldType.addOption("Welded Field", FieldType.WELDED);
+
+		Shuffleboard.getTab("Autos")
+			.add("Field Type", kFieldType)
+			.withWidget(BuiltInWidgets.kComboBoxChooser)
+			.withSize(2, 1)
+			.withPosition(0, 0);
+	}
 
 	/** 
 	 * Usually red means some calculations are flipped
@@ -78,6 +98,16 @@ public class Constants {
 			new Translation2d(SwerveConstants.kWheelDistanceMeters / 2, SwerveConstants.kWheelDistanceMeters / 2), // I REALLY DONT KNOW ANYMORE
 			new Translation2d(-SwerveConstants.kWheelDistanceMeters / 2, -SwerveConstants.kWheelDistanceMeters / 2),
 			new Translation2d(SwerveConstants.kWheelDistanceMeters / 2, -SwerveConstants.kWheelDistanceMeters / 2)
+		);
+
+		public static final ControlConstants kPresetRotControlConstants = new ControlConstants(
+			"SwervePresetRot",
+			10,
+			0,
+			1,
+			0,
+			0,
+			0
 		);
 
 		static {

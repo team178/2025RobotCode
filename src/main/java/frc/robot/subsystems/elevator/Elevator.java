@@ -54,7 +54,7 @@ public class Elevator extends SubsystemBase {
     }
 
     public Command runaEffectorPreferences() {
-        return runOnce(() -> elevatorIO.setEffectorVolts(-Preferences.getDouble("ele/leftvolts", 0), Preferences.getDouble("ele/rightvolts", 0)));
+        return runOnce(() -> elevatorIO.setEffectorVolts(-Preferences.getDouble("ele/leftvolts", 0), -Preferences.getDouble("ele/rightvolts", 0)));
     }
 
     public boolean getUpperPhotosensor() {

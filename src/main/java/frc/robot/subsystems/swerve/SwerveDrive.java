@@ -59,6 +59,9 @@ public class SwerveDrive extends SubsystemBase {
     private PIDController trajVYController;
     private PIDController trajHeadingController;
 
+    private PIDController presetRotController;
+    private PIDController presetPosController;
+
     private FieldZones fieldZone;
 
     private double elevatorSpeedFactor;
@@ -104,15 +107,22 @@ public class SwerveDrive extends SubsystemBase {
         );
         poseEstimator = new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, modulePositions, (Constants.isRed() ? new Pose2d(17.548, 8.052, Rotation2d.kPi) : new Pose2d()));
 
+        presetPosController = new PIDController(
+            SwerveConstants.kPresetRotControlConstants.kP(),
+            SwerveConstants.kPresetRotControlConstants.kI(),
+            SwerveConstants.kPresetRotControlConstants.kD()
+        );
+
         trajVXController = new PIDController(10, 0, 0);
         trajVYController = new PIDController(10, 0, 0);
-        trajHeadingController = new PIDController(7.5, 0, 0);
+        trajHeadingController = new PIDController(5, 0, 0);
+        trajHeadingController.enableContinuousInput(0, 2 * Math.PI);
     }
 
     public void setToAimSuppliers(BooleanSupplier goAimReef, BooleanSupplier goAimProcessor, BooleanSupplier goAimStation) {
         this.goAimReef = goAimReef;
         this.goAimProcessor = goAimProcessor;
-        this.goAimProcessor = goAimStation;
+        this.goAimStation = goAimStation;
     }
 
     public void setToPosSuppliers(BooleanSupplier goPosLeftReef, BooleanSupplier goPosRightReef, BooleanSupplier goPosProcessor) {
@@ -180,21 +190,37 @@ public class SwerveDrive extends SubsystemBase {
         omega = adjustAxisInput(omega, deadband, minThreshold, steepness);
         omega *= SwerveConstants.kRotVelLimit;
 
-        if(toX && mag == 0 && omega == 0) {
-            toXPosition(optimize);
-            return;
-        }
         ChassisSpeeds chassisSpeeds = new ChassisSpeeds(mag * Math.cos(dir), mag * Math.sin(dir), omega);
-        runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
+        injectPresetRotation(chassisSpeeds, fieldRelative, optimize);
     }
 
-    public void applyPresetRotation(ChassisSpeeds chassisSpeeds) {
+    public void injectPresetRotation(ChassisSpeeds chassisSpeeds, boolean fieldRelative, boolean optimize) {
         if(goAimReef.getAsBoolean()) {
-
+            toPresetRotation(chassisSpeeds, fieldZone.rotation(), fieldRelative, optimize);
+        } else if(goAimProcessor.getAsBoolean()) {
+            toPresetRotation(chassisSpeeds, Constants.isRed() ? Rotation2d.kCCW_90deg : Rotation2d.kCW_90deg, fieldRelative, optimize);
+        } else if(goAimStation.getAsBoolean()) {
+            toPresetRotation(chassisSpeeds,
+                getPose().getY() > FieldConstants.fieldHeight / 2 ?
+                (Constants.isRed() ? Rotation2d.fromDegrees(144.011392 + 90) : Rotation2d.fromDegrees(360 - 144.011392 + 90)) :
+                (Constants.isRed() ? Rotation2d.fromDegrees(360 - 144.011392 - 90): Rotation2d.fromDegrees(144.011392 - 90)),
+            fieldRelative, optimize);
+        } else {
+            runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
         }
+    }
+
+    public void toPresetRotation(ChassisSpeeds chassisSpeeds, Rotation2d heading, boolean fieldRelative, boolean optimize) {
+        ChassisSpeeds desiredSpeeds = chassisSpeeds;
+        desiredSpeeds.omegaRadiansPerSecond = trajHeadingController.calculate(getPose().getRotation().getRadians(), heading.getRadians());
+        runChassisSpeeds(desiredSpeeds, fieldRelative, optimize);
     }
 
     public void runChassisSpeeds(ChassisSpeeds chassisSpeeds, boolean fieldRelative, boolean optimize) {
+        if(toX && chassisSpeeds.vxMetersPerSecond == 0 && chassisSpeeds.vyMetersPerSecond == 0 && chassisSpeeds.omegaRadiansPerSecond == 0) {
+            toXPosition(optimize);
+            return;
+        }
         ChassisSpeeds adjustedSpeeds = chassisSpeeds;
         if(fieldRelative) {
             adjustedSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -318,6 +344,9 @@ public class SwerveDrive extends SubsystemBase {
             for(SDSSwerveModule module : modules) {
                 module.updateControlConstants();
             }
+            presetPosController.setP(SwerveConstants.kPresetRotControlConstants.kP());
+            presetPosController.setI(SwerveConstants.kPresetRotControlConstants.kI());
+            presetPosController.setD(SwerveConstants.kPresetRotControlConstants.kD());
             System.out.println("Swerve control constants updated");
         });
     }
