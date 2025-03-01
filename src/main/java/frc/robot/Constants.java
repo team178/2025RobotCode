@@ -192,10 +192,10 @@ public class Constants {
 		public static final int kRightEffectorCANID = 14;
 		public static final int kFunnelMotorCANID = 15;
 
-		public static final int kHighLimitDIO = 0;
-		public static final int kLowLimitDIO = 1;
-		public static final int kUpperPhotosensorDIO = 9;
-		public static final int kLowerPhotosensorDIO = 2;
+		public static final int kHighLimitDIO = 1;
+		public static final int kLowLimitDIO = 9;
+		public static final int kUpperPhotosensorDIO = 2;
+		public static final int kLowerPhotosensorDIO = 7;
 
 		public static final double kSprocketPitchDiameter = Units.inchesToMeters(1.7567); // meters
 		public static final double kElevatorPositionConversionFactor = kSprocketPitchDiameter * Math.PI;
@@ -221,6 +221,7 @@ public class Constants {
 				.smartCurrentLimit(30)
 				.voltageCompensation(12)
 				.inverted(true)
+				.closedLoopRampRate(0.1)
 			; elevatorLeaderConfig.closedLoop
 				// .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
 				.p(elevatorControlConstants.kP(), ClosedLoopSlot.kSlot0)
@@ -234,7 +235,7 @@ public class Constants {
 				.d(elevatorControlConstants.kD(), ClosedLoopSlot.kSlot2)
 				.outputRange(-1, 1, ClosedLoopSlot.kSlot0) // no limit
 				.outputRange(0, 1, ClosedLoopSlot.kSlot1) // low limit
-				.outputRange(-1, 0.1, ClosedLoopSlot.kSlot2) // high limit
+				.outputRange(-1, 0.03, ClosedLoopSlot.kSlot2) // high limit
 			// ; elevatorLeaderConfig.absoluteEncoder
 			// 	.positionConversionFactor(kElevatorPositionConversionFactor)
 			// 	.velocityConversionFactor(kElevatorPositionConversionFactor)

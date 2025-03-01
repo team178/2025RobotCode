@@ -45,5 +45,7 @@ public interface ElevatorIO {
 
     public default void setFunnelMotorVolts(double volts) {}
 
+    public default void resetElevatorEncoder(double pos) {}
+
     public default void updateControlConstants() {}
 }

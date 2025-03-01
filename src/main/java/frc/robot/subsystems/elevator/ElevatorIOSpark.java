@@ -100,8 +100,9 @@ public class ElevatorIOSpark implements ElevatorIO {
         inputs.funnelMotorAppliedVolts = funnelMotor.getAppliedOutput() * funnelMotor.getBusVoltage();
         inputs.funnelMotorCurrentAmps = funnelMotor.getOutputCurrent();
 
-        inputs.highLimit = highLimit.get();
-        inputs.lowLimit = lowLimit.get();
+        // get() is false when mag limit switch is in range, true when out of range or disconnected
+        inputs.highLimit = !highLimit.get();
+        inputs.lowLimit = !lowLimit.get();
         inputs.upperPhotosensor = upperPhotosensor.get();
         inputs.lowerPhotosensor = lowerPhotosensor.get();
     }
@@ -110,14 +111,14 @@ public class ElevatorIOSpark implements ElevatorIO {
     public void setElevatorPosition(ElevatorPosition position) {
         desiredPosition = position;
         double ffVolts = ElevatorConstants.elevatorControlConstants.kG();
-        // elevatorController.setReference(
-        //     position.height, ControlType.kPosition,
-        //     (lowLimit.get()) ? ClosedLoopSlot.kSlot1 : ((highLimit.get()) ? ClosedLoopSlot.kSlot2 : ClosedLoopSlot.kSlot0),
-        //     ffVolts, ArbFFUnits.kVoltage);
         elevatorController.setReference(
             position.height, ControlType.kPosition,
-            ClosedLoopSlot.kSlot0,
+            (!lowLimit.get()) ? ClosedLoopSlot.kSlot1 : ((!highLimit.get()) ? ClosedLoopSlot.kSlot2 : ClosedLoopSlot.kSlot0),
             ffVolts, ArbFFUnits.kVoltage);
+        // elevatorController.setReference(
+        //     position.height, ControlType.kPosition,
+        //     ClosedLoopSlot.kSlot0,
+        //     ffVolts, ArbFFUnits.kVoltage);
     }
 
     @Override
@@ -147,6 +148,11 @@ public class ElevatorIOSpark implements ElevatorIO {
     public void setFunnelMotorVolts(double volts) {
         funnelDesiredVolts = volts;
         funnelMotor.setVoltage(volts);
+    }
+
+    @Override
+    public void resetElevatorEncoder(double position) {
+        elevatorEncoder.setPosition(position);
     }
 
     @Override

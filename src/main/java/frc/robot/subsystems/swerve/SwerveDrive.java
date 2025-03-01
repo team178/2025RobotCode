@@ -29,6 +29,7 @@ import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Preferences;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -75,6 +76,8 @@ public class SwerveDrive extends SubsystemBase {
     private BooleanSupplier goPosRightReef;
     private BooleanSupplier goPosProcessor;
 
+    private double lastMove;
+
     //! Vision to be added
 
     public SwerveDrive(GyroIO gyroIO, SDSModuleIO FLModuleIO, SDSModuleIO FRModuleIO, SDSModuleIO BLModuleIO, SDSModuleIO BRModuleIO) {
@@ -117,6 +120,8 @@ public class SwerveDrive extends SubsystemBase {
         trajVYController = new PIDController(10, 0, 0);
         trajHeadingController = new PIDController(5, 0, 0);
         trajHeadingController.enableContinuousInput(0, 2 * Math.PI);
+
+        lastMove = Timer.getFPGATimestamp();
     }
 
     public void setToAimSuppliers(BooleanSupplier goAimReef, BooleanSupplier goAimProcessor, BooleanSupplier goAimStation) {
@@ -217,7 +222,10 @@ public class SwerveDrive extends SubsystemBase {
     }
 
     public void runChassisSpeeds(ChassisSpeeds chassisSpeeds, boolean fieldRelative, boolean optimize) {
-        if(toX && chassisSpeeds.vxMetersPerSecond == 0 && chassisSpeeds.vyMetersPerSecond == 0 && chassisSpeeds.omegaRadiansPerSecond == 0) {
+        if(chassisSpeeds.vxMetersPerSecond != 0 || chassisSpeeds.vyMetersPerSecond != 0 || chassisSpeeds.omegaRadiansPerSecond != 0) {
+            lastMove = Timer.getFPGATimestamp();
+        }
+        if(toX && Timer.getFPGATimestamp() - lastMove > 1) {
             toXPosition(optimize);
             return;
         }
@@ -257,7 +265,7 @@ public class SwerveDrive extends SubsystemBase {
         }, optimize);
     }
 
-    public Command runToXPosition(boolean optimize) {
+    public Command runToggleToXPosition(boolean optimize) {
         return runOnce(() -> {
             toX = !toX;
             System.out.println("tox");

@@ -93,7 +93,7 @@ public class RobotContainer {
         ));
 
         driverController.y().onTrue(swerve.runZeroGyro());
-        driverController.back().onTrue(swerve.runToXPosition(true));
+        driverController.back().onTrue(swerve.runToggleToXPosition(true));
         
 
         // swerve.setDefaultCommand(swerve.runSimOdometryMoveBy(
@@ -124,12 +124,15 @@ public class RobotContainer {
         // auxController.x().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.CARRY));
 
         auxController.b().onTrue(elevator.runToElevatorPosition(ElevatorPosition.HOME));
+        auxController.a().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L1));
         auxController.x().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L2));
-        // auxController.y().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L3));
+        auxController.y().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L3));
         auxController.leftBumper().onTrue(elevator.runEffector(-4, 4));
         auxController.leftBumper().onFalse(elevator.runEffector(0, 0));
-        auxController.leftTrigger().onTrue(elevator.runEffector(-8, 4));
+        auxController.leftTrigger().onTrue(elevator.runEffector(-6, 3));
         auxController.leftTrigger().onFalse(elevator.runEffector(0, 0));
+        auxController.rightBumper().onTrue(elevator.runSetFunnelVolts(-2));
+        auxController.rightBumper().onFalse(elevator.runSetFunnelVolts(0));
     }
 
     public Command getAutonomousCommand() {
