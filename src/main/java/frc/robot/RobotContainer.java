@@ -4,7 +4,6 @@
 
 package frc.robot;
 
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -79,12 +78,15 @@ public class RobotContainer {
         driverController.x().onFalse(swerve.runStopDrive());
         driverController.b().onTrue(swerve.runUpdateControlConstants());
 
-        climber.setDefaultCommand(climber.runClimber(
-            auxController.b()::getAsBoolean,
-            auxController.x()::getAsBoolean,
-            auxController.y()::getAsBoolean,
-            auxController.a()::getAsBoolean
-        ));
+        // climber.setDefaultCommand(climber.runClimber(
+        //     auxController.b()::getAsBoolean,
+        //     auxController.a()::getAsBoolean
+        // ));
+
+        auxController.a().onTrue(climber.runUp());
+        auxController.b().onTrue(climber.runDown());
+        auxController.a().onFalse(climber.stop());
+        auxController.b().onFalse(climber.stop());
     }
 
     public Command getAutonomousCommand() {

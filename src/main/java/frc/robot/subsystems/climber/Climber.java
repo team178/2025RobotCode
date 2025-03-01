@@ -23,6 +23,18 @@ public class Climber extends SubsystemBase{
         
         return run(() -> climber.climberInputs(bSet, bUp, bDown));
     }
+
+    public Command runUp() {
+        return runOnce( () -> climber.setVolts(0.1));
+    }
+
+    public Command runDown() {
+        return runOnce(() -> climber.setVolts(-0.1));
+    }
+
+    public Command stop() {
+        return runOnce(() -> climber.setVolts(0));
+    }
     
     @Override
     public void periodic() {

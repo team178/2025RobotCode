@@ -46,7 +46,6 @@ public class ClimberIOSpark implements ClimberIO {
 
         kG = ClimberConstants.kClimbG;
         isLocked = true;
-        
     }
 
     @Override
@@ -96,6 +95,7 @@ public class ClimberIOSpark implements ClimberIO {
                 ArbFFUnits.kVoltage
             );
         }
+
         if(encoder.getPosition() < ClimberConstants.minPos) {
             down = true;
             pid.setReference(
@@ -106,12 +106,19 @@ public class ClimberIOSpark implements ClimberIO {
                 ArbFFUnits.kVoltage
             );
         }
+
         if(isLocked && (encoder.getVelocity() > ClimberConstants.maxVel)) {
             kG = ClimberConstants.kClimbG;
         }
+        
         if(isLocked && (encoder.getVelocity() < ClimberConstants.minVel)) {
             kG = ClimberConstants.kLightG;
         }
+    }
+
+    @Override
+    public void setVolts(double volts) {
+        climberMotor.setVoltage(volts);
     }
 
     @Override

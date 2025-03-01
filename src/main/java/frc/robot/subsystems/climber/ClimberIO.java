@@ -14,4 +14,6 @@ public interface ClimberIO {
     public default void update() {}
 
     public default double getPos() {return 0;}
+
+    public default void setVolts(double volts) {}
 }
