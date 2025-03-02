@@ -99,7 +99,7 @@ public class Elevator extends SubsystemBase {
      */
     public Command runScoreToElevatorPosition(ElevatorPosition position) {
         return runToElevatorPosition(position)
-            .andThen(runEffector(-4, 4))
+            .andThen(!position.equals(ElevatorPosition.L1) ? runEffector(-4, 4) : runEffector(-6, 3))
             .andThen(new WaitUntilCommand(() -> !getLowerPhotosensor())) // May need to add a timer to this
             .andThen(runEffector(0, 0))
             .andThen(runToElevatorPosition(ElevatorPosition.HOME));

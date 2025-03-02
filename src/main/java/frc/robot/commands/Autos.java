@@ -27,6 +27,8 @@ public class Autos {
     private static final SendableChooser<StartingPositions> startingPositionChooser =  new SendableChooser<>();
     private static final SendableChooser<ReefPositions> firstReefPositionChooser = new SendableChooser<>();
     private static final SendableChooser<ReefPositions> secondReefPositionChooser = new SendableChooser<>();
+    private static final SendableChooser<ElevatorPosition> firstReefHeightChooser = new SendableChooser<>();
+    private static final SendableChooser<ElevatorPosition> secondReefHeightChooser = new SendableChooser<>();
 
     private static final HashMap<String, Trajectory<SwerveSample>> trajectories = new HashMap<>();
 
@@ -64,9 +66,6 @@ public class Autos {
         //     .withWidget(BuiltInWidgets.kSplitButtonChooser)
         //     .withSize(9, 1);
 
-        tab.add("Starting Position", startingPositionChooser)
-            .withWidget(BuiltInWidgets.kSplitButtonChooser)
-            .withSize(9, 1);
         for (StartingPositions position : StartingPositions.values()) {
             if (position.equals(StartingPositions.Left)) {
                 startingPositionChooser.setDefaultOption(position.toString(), position);
@@ -74,10 +73,10 @@ public class Autos {
                 startingPositionChooser.addOption(position.toString(), position);
             }
         }
-
-        tab.add("Leg 1 Reef Position", firstReefPositionChooser)
+        tab.add("Starting Position", startingPositionChooser)
             .withWidget(BuiltInWidgets.kSplitButtonChooser)
             .withSize(9, 1);
+
         for (ReefPositions position : ReefPositions.values()) {
             if (position.equals(ReefPositions.A)) {
                 firstReefPositionChooser.setDefaultOption(position.toString(), position);
@@ -85,17 +84,34 @@ public class Autos {
                 firstReefPositionChooser.addOption(position.toString(), position);
             }
         }
-
-        tab.add("Leg 2 Reef Position", secondReefPositionChooser)
+        tab.add("Leg 1 Reef Position", firstReefPositionChooser)
             .withWidget(BuiltInWidgets.kSplitButtonChooser)
             .withSize(9, 1);
+
+        firstReefHeightChooser.setDefaultOption("L3", ElevatorPosition.L3);
+        firstReefHeightChooser.addOption("L2", ElevatorPosition.L2);
+        firstReefHeightChooser.addOption("L1", ElevatorPosition.L1);
+        tab.add("Leg 1 Reef Height", firstReefHeightChooser)
+            .withWidget(BuiltInWidgets.kSplitButtonChooser)
+            .withSize(9, 1);
+        
         for (ReefPositions position : ReefPositions.values()) {
             if (position.equals(ReefPositions.A)) {
                 secondReefPositionChooser.setDefaultOption(position.toString(), position);
             } else {
                 secondReefPositionChooser.addOption(position.toString(), position);
-            }
         }
+        tab.add("Leg 2 Reef Position", secondReefPositionChooser)
+            .withWidget(BuiltInWidgets.kSplitButtonChooser)
+            .withSize(9, 1);
+        }
+
+        secondReefHeightChooser.setDefaultOption("L3", ElevatorPosition.L3);
+        secondReefHeightChooser.addOption("L2", ElevatorPosition.L2);
+        secondReefHeightChooser.addOption("L1", ElevatorPosition.L1);
+        tab.add("Leg 2 Reef Height", secondReefHeightChooser)
+            .withWidget(BuiltInWidgets.kSplitButtonChooser)
+            .withSize(9, 1);
 
         loadTrajectories();
     }
@@ -146,9 +162,9 @@ public class Autos {
             );
         }
 
-        return (FullAutoCommand) runAutoToReef(trajectoryName1, ElevatorPosition.L3, swerve, elevator)
+        return (FullAutoCommand) runAutoToReef(trajectoryName1, firstReefHeightChooser.getSelected(), swerve, elevator)
             .andThen(runAutoToCoralStation(trajectoryName2, 2.0, swerve, elevator))
-            .andThen(runAutoToReef(trajectoryName3, ElevatorPosition.L3, swerve, elevator));
+            .andThen(runAutoToReef(trajectoryName3, secondReefHeightChooser.getSelected(), swerve, elevator));
     }
 
     /**
