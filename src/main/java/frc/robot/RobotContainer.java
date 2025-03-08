@@ -58,7 +58,7 @@ public class RobotContainer {
                 vision = new Vision(
                     swerve::addVisionMeasurement,
                     new VisionIOLimelight(LimelightLocations.FRONT3, () -> swerve.getPose().getRotation()),
-                    new VisionIOLimelight(LimelightLocations.HIGH2PLUS, () -> swerve.getPose().getRotation()),
+                    new VisionIOLimelight(LimelightLocations.HIGH3, () -> swerve.getPose().getRotation()),
                     new VisionIOLimelight(LimelightLocations.SIDE2, () -> swerve.getPose().getRotation())
                 );
                 break;
@@ -80,17 +80,22 @@ public class RobotContainer {
 
     private void configureBindings() {
         swerve.setToAimSuppliers(
-            driverController.x()::getAsBoolean,
-            driverController.b()::getAsBoolean,
-            driverController.a()::getAsBoolean
+            driverController.x()::getAsBoolean, // aim reef
+            driverController.b()::getAsBoolean, // aim processor
+            driverController.a()::getAsBoolean // aim station
+        );
+        swerve.setToPosSuppliers(
+            driverController.povLeft()::getAsBoolean, // left reef
+            driverController.povRight()::getAsBoolean, // right reef
+            driverController.povDown()::getAsBoolean // processor
         );
         swerve.setDefaultCommand(swerve.runDriveInputs(
-            driverController::getLeftX,
-            driverController::getLeftY,
-            driverController::getRightX,
-            driverController::getRightTriggerAxis,
-            driverController.leftBumper()::getAsBoolean,
-            driverController.rightBumper()::getAsBoolean
+            driverController::getLeftX, // vx
+            driverController::getLeftY, // vy
+            driverController::getRightX, // omega
+            driverController::getRightTriggerAxis, // raw slow input
+            driverController.leftBumper()::getAsBoolean, // robot centric
+            driverController.rightBumper()::getAsBoolean // no optimize
         ));
 
         driverController.y().onTrue(swerve.runZeroGyro());

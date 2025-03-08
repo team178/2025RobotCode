@@ -173,12 +173,12 @@ public class SwerveDrive extends SubsystemBase {
             // double minThreshold = 0.05; // minimum robot input to overcome resistance
             // double steepness = 1.8; // power to raise input (which is on interval [-1, 1], so reduces lower values)
 
-            // rotate axes to NWU coordinate system
             // double vx = adjustAxisInput(yInputValue, deadband, minThreshold, steepness);
             // double vy = adjustAxisInput(-xInputValue, deadband, minThreshold, steepness);
             // double omega = adjustAxisInput(omegaInput.getAsDouble(), deadband, minThreshold, steepness);
             double speedFactor = 1 - (1 - SwerveConstants.kSlowedMult) * speedFactorInput.getAsDouble();
-
+            
+            // rotate axes to NWU coordinate system
             adjustDriveSpeeds(yInputValue, -xInputValue, omegaInputValue, speedFactor, !robotCentric.getAsBoolean(), !noOptimize.getAsBoolean());
         });
     }
@@ -211,14 +211,63 @@ public class SwerveDrive extends SubsystemBase {
                 (Constants.isRed() ? Rotation2d.fromDegrees(360 - 144.011392 - 90): Rotation2d.fromDegrees(144.011392 - 90)),
             fieldRelative, optimize);
         } else {
-            runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
+            injectPresetPosition(chassisSpeeds, fieldRelative, optimize);
         }
     }
 
     public void toPresetRotation(ChassisSpeeds chassisSpeeds, Rotation2d heading, boolean fieldRelative, boolean optimize) {
         ChassisSpeeds desiredSpeeds = chassisSpeeds;
         desiredSpeeds.omegaRadiansPerSecond = trajHeadingController.calculate(getPose().getRotation().getRadians(), heading.getRadians());
-        runChassisSpeeds(desiredSpeeds, fieldRelative, optimize);
+        injectPresetPosition(desiredSpeeds, fieldRelative, optimize);
+    }
+
+    public void injectPresetPosition(ChassisSpeeds chassisSpeeds, boolean fieldRelative, boolean optimize) {
+        if(goPosLeftReef.getAsBoolean()) {
+            if(fieldZone.equals(FieldZones.OPPOSITE)) {
+                runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
+                return;
+            }
+            Pose2d desiredPose = fieldZone.leftReefPose;
+            Pose2d errorPose = getPose().transformBy(new Transform2d(desiredPose, new Pose2d()));
+            double vyReefRelative = presetPosController.calculate(errorPose.getY(), 0);
+            
+            ChassisSpeeds fieldRelativeSpeeds = fieldRelative ? 
+                (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
+                ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
+            ChassisSpeeds reefRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, fieldZone.rotation());
+            reefRelativeSpeeds.vyMetersPerSecond = vyReefRelative;
+            fieldRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(reefRelativeSpeeds, fieldZone.rotation());
+            runChassisSpeeds(fieldRelativeSpeeds, true, optimize);
+        } else if(goPosRightReef.getAsBoolean()) {
+            if(fieldZone.equals(FieldZones.OPPOSITE)) {
+                runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
+                return;
+            }
+            Pose2d desiredPose = fieldZone.rightReefPose;
+            Pose2d errorPose = getPose().transformBy(new Transform2d(desiredPose, new Pose2d()));
+            double vyReefRelative = presetPosController.calculate(errorPose.getY(), 0);
+            
+            ChassisSpeeds fieldRelativeSpeeds = fieldRelative ? 
+                (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
+                ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
+            ChassisSpeeds reefRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, fieldZone.rotation());
+            reefRelativeSpeeds.vyMetersPerSecond = vyReefRelative;
+            fieldRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(reefRelativeSpeeds, fieldZone.rotation());
+            runChassisSpeeds(fieldRelativeSpeeds, true, optimize);
+        } else if(goPosProcessor.getAsBoolean()) {
+            double vx = switch(Constants.kFieldType.getSelected()) {
+                case ANDYMARK -> presetPosController.calculate(getPose().getX(), Constants.isRed() ? FieldConstants.fieldWidth - 6.27 : 6.27);
+                case WELDED -> presetPosController.calculate(getPose().getX(), Constants.isRed() ? FieldConstants.fieldWidth - 6.18 : 6.18);
+                default -> 0;
+            };
+            ChassisSpeeds fieldRelativeSpeeds = fieldRelative ? 
+                (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
+                ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
+            fieldRelativeSpeeds.vxMetersPerSecond = vx;
+            runChassisSpeeds(chassisSpeeds, true, optimize);
+        } else {
+            runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
+        }
     }
 
     public void runChassisSpeeds(ChassisSpeeds chassisSpeeds, boolean fieldRelative, boolean optimize) {
@@ -241,6 +290,17 @@ public class SwerveDrive extends SubsystemBase {
         adjustedSpeeds = ChassisSpeeds.discretize(adjustedSpeeds, LoggedRobot.defaultPeriodSecs);
         SwerveModuleState[] moduleSetpoints = kinematics.toSwerveModuleStates(adjustedSpeeds);
         SwerveDriveKinematics.desaturateWheelSpeeds(moduleSetpoints, SwerveConstants.kMaxWheelSpeed);
+
+        // if(Constants.currentMode.equals(Constants.RobotMode.SIM)) {
+        //     ChassisSpeeds fieldRelativeSpeeds = fieldRelative ? 
+        //         (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
+        //         ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
+        //     setPose(getPose().plus(new Transform2d(
+        //         fieldRelativeSpeeds.vxMetersPerSecond / 10000,
+        //         fieldRelativeSpeeds.vyMetersPerSecond / 10000,
+        //         new Rotation2d(fieldRelativeSpeeds.omegaRadiansPerSecond / 10000)
+        //     )));
+        // }
 
         Logger.recordOutput("Swerve/States/Setpoints", moduleSetpoints);
         Logger.recordOutput("Swerve/ChassisSpeeds/Setpoints", adjustedSpeeds);
@@ -367,16 +427,23 @@ public class SwerveDrive extends SubsystemBase {
         )));
     }
 
-    // public Command runSimOdometryMoveBy(DoubleSupplier x, DoubleSupplier y, DoubleSupplier omega) {
-    //     return run(() -> {
-    //         setPose(getPose().plus(new Transform2d(x.getAsDouble() / 10000, -y.getAsDouble() / 10000, new Rotation2d(-omega.getAsDouble() / 10000))));
-    //         // System.out.println("idk");
-    //     });
-    // }
+    public Command runSimOdometryMoveBy(DoubleSupplier x, DoubleSupplier y, DoubleSupplier omega) {
+        return run(() -> {
+            setPose(getPose().plus(new Transform2d(x.getAsDouble() / 10000, -y.getAsDouble() / 10000, new Rotation2d(-omega.getAsDouble() / 10000))));
+            // System.out.println("idk");
+        });
+    }
 
     @AutoLogOutput(key = "Odometry/Pose")
     public Pose2d getPose() {
         return poseEstimator.getEstimatedPosition();
+    }
+
+    private ChassisSpeeds flipChassisSpeeds(ChassisSpeeds chassisSpeeds) {
+        ChassisSpeeds flipped = chassisSpeeds;
+        flipped.vxMetersPerSecond *= -1;
+        flipped.vyMetersPerSecond *= -1;
+        return flipped;
     }
 
     public void addVisionMeasurement(Pose2d visionMeasurement, double timestamp, Matrix<N3,N1> stdDevs) {

@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.DoubleSubscriber;
@@ -143,6 +144,10 @@ public class VisionIOLimelight implements VisionIO {
         double latency = rawMegatagData[6];
         int tagCount = (int) rawMegatagData[7];
         double averageTagDistance = rawMegatagData[9];
+
+        roll = Units.degreesToRadians(roll);
+        pitch = Units.degreesToRadians(pitch);
+        yaw = Units.degreesToRadians(yaw);
 
         double observationTimestamp = timestampSeconds - latency * 1e-3;
         Pose3d pose = new Pose3d(x, y, z, new Rotation3d(roll, pitch, yaw));

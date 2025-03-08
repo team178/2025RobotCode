@@ -2,7 +2,7 @@ package frc.robot.subsystems.vision;
 
 public enum LimelightLocations {
     FRONT3("limelight-front", 1, 1),
-    HIGH2PLUS("limelight-high", 1.5, 1.5),
+    HIGH3("limelight-high", 1.5, 1.5),
     SIDE2("limelight-side", 2, 2),
     DEFAULT("limelight", 1, 1)
     ;
