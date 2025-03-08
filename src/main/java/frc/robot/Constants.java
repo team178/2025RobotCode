@@ -340,10 +340,10 @@ public class Constants {
 
 	// TODO adjust
 	public static class VisionConstants {
-		public static final double linearStdDevBaseline = 0.02;
-		public static final double angularStdDevBaseline = 0.06;
+		public static final double linearStdDevBaseline = 20;
+		public static final double angularStdDevBaseline = 60;
 
-		public static final double linearStdDevMT2Factor = 0.5;
+		public static final double linearStdDevMT2Factor = 0.1;
 		public static final double angularStdDevMT2Factor = Double.POSITIVE_INFINITY;
 
 	}

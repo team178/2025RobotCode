@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.Constants.RobotMode;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
@@ -54,12 +55,12 @@ public class RobotContainer {
                 );
                 elevator = new Elevator(new ElevatorIOSpark());
                 // manipulator = new Manipulator(new ManipulatorIOSpark());
-                // vision = new Vision(
-                //     swerve::addVisionMeasurement,
-                //     new VisionIOLimelight(LimelightLocations.FRONT3, swerve.getPose()::getRotation),
-                //     new VisionIOLimelight(LimelightLocations.HIGH2PLUS, swerve.getPose()::getRotation),
-                //     new VisionIOLimelight(LimelightLocations.SIDE2, swerve.getPose()::getRotation)
-                // );
+                vision = new Vision(
+                    swerve::addVisionMeasurement,
+                    new VisionIOLimelight(LimelightLocations.FRONT3, () -> swerve.getPose().getRotation()),
+                    new VisionIOLimelight(LimelightLocations.HIGH2PLUS, () -> swerve.getPose().getRotation()),
+                    new VisionIOLimelight(LimelightLocations.SIDE2, () -> swerve.getPose().getRotation())
+                );
                 break;
             default:
                 swerve = new SwerveDrive(
@@ -95,12 +96,13 @@ public class RobotContainer {
         driverController.y().onTrue(swerve.runZeroGyro());
         driverController.back().onTrue(swerve.runToggleToXPosition(true));
         
-
-        // swerve.setDefaultCommand(swerve.runSimOdometryMoveBy(
-        //     driverController::getLeftX,
-        //     driverController::getLeftY,
-        //     driverController::getRightX
-        // ));
+        // if(Constants.simMode.equals(RobotMode.SIM)) {
+        //     swerve.setDefaultCommand(swerve.runSimOdometryMoveBy(
+        //         driverController::getLeftX,
+        //         driverController::getLeftY,
+        //         driverController::getRightX
+        //     ));
+        // }
 
         // driverController.a().onTrue(swerve.runTestDrive());
         // driverController.a().onFalse(swerve.runStopDrive());
