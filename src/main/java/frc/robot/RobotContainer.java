@@ -27,6 +27,7 @@ import frc.robot.subsystems.vision.LimelightLocations;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
+import frc.robot.util.Combo;
 
 public class RobotContainer {
     private CommandXboxController driverController;
@@ -140,6 +141,19 @@ public class RobotContainer {
         auxController.leftTrigger().onFalse(elevator.runEffector(0, 0));
         auxController.rightBumper().onTrue(elevator.runSetFunnelVolts(-2));
         auxController.rightBumper().onFalse(elevator.runSetFunnelVolts(0));
+
+        // Combo testCombo = new Combo("test combo", 1,
+        //     driverController.a(),
+        //     driverController.a().negate(),
+        //     driverController.b(),
+        //     driverController.b().negate(),
+        //     driverController.x(),
+        //     driverController.x().negate(),
+        //     driverController.a(),
+        //     driverController.a().negate(),
+        //     driverController.y()
+        // );
+        // testCombo.getTrigger().onTrue(Commands.print("triggered"));
     }
 
     public Command getAutonomousCommand() {
