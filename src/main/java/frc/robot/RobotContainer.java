@@ -76,8 +76,6 @@ public class RobotContainer {
         }
 
         configureBindings();
-
-        Autos.initAutos(swerve, elevator);
     }
 
     private void configureBindings() {

@@ -5,7 +5,7 @@ public enum ElevatorPosition {
     L1("L1", 0.337),
     L2("L2", 0.432),
     L3("L3", 0.607),
-    L4("L4", 0.0),
+    // L4("L4", 0.0),
     ;
 
     public final String name;

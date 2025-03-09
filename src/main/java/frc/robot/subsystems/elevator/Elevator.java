@@ -5,6 +5,7 @@ import org.littletonrobotics.junction.Logger;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 
 public class Elevator extends SubsystemBase {
@@ -93,16 +94,27 @@ public class Elevator extends SubsystemBase {
     }
 
     /**
-     * Moves elevator up, expells the Coral, waits until it's gone, turns off end effector, then lowers elevator.
+     * Moves elevator up, waits until elevator is (almost) at position, expels coral, waits until it's placed, stops end effector, then lowers elevator.
      * @param position Elevator height to raise elevator to and score at.
      * @return Command Group representing the full scoring movement.
      */
     public Command runScoreToElevatorPosition(ElevatorPosition position) {
+        if(position.equals(ElevatorPosition.HOME)) return runToElevatorPosition(position);
         return runToElevatorPosition(position)
+            .andThen(new WaitUntilCommand(() -> Math.abs(position.height - elevatorIOInputs.elevatorHeight) < 0.02))
             .andThen(!position.equals(ElevatorPosition.L1) ? runEffector(-4, 4) : runEffector(-6, 3))
-            .andThen(new WaitUntilCommand(() -> !getLowerPhotosensor())) // May need to add a timer to this
+            .andThen(new WaitUntilCommand(() -> !getLowerPhotosensor()))
+            .andThen(new WaitCommand(0.1)) // TODO may want to look at tweaking the time here
             .andThen(runEffector(0, 0))
             .andThen(runToElevatorPosition(ElevatorPosition.HOME));
+    }
+
+    /**
+     * Waits until elevator is within tolerance distance away from home, useful for ensuring trajectory following a score is safe
+     * @return The appropriate WaitUntilCommand
+     */
+    public Command runWaitUntilSafeToMove(double tolerance) {
+        return new WaitUntilCommand(() -> Math.abs(ElevatorPosition.HOME.height - elevatorIOInputs.elevatorHeight) < tolerance);
     }
 
     /**
@@ -111,12 +123,11 @@ public class Elevator extends SubsystemBase {
      */
     public Command runIntakeFromCoralStation() {
         return runToElevatorPosition(ElevatorPosition.HOME)
-            .alongWith(runSetFunnelVolts(4)) // THIS IS COMPLETELY ARBITRARY PLEASE REPLACE THIS WITH WHATEVER NUMBER ANDY HAS BEEN USING
-            .alongWith(runEffector(-4, 4))
-            .andThen(new WaitUntilCommand(this::getLowerPhotosensor)) // Probably best to replace this with upper photosensor and add delay once upper photosensor is reliable
-            .andThen(
-                runEffector(0, 0)
-                .alongWith(runSetFunnelVolts(0))
-            );
+            .andThen(runSetFunnelVolts(-2))
+            .andThen(runEffector(-4, 4))
+            .andThen(new WaitUntilCommand(this::getUpperPhotosensor)) // TODO check
+            .andThen(new WaitCommand(0.1))
+            .andThen(runEffector(0, 0))
+            .andThen(runSetFunnelVolts(0));
     }
 }

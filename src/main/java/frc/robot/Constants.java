@@ -1,6 +1,5 @@
 package frc.robot;
 
-import com.revrobotics.spark.config.AbsoluteEncoderConfig;
 import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
@@ -43,7 +42,7 @@ public class Constants {
 		kFieldType.setDefaultOption("AndyMark Field", FieldType.ANDYMARK);
 		kFieldType.addOption("Welded Field", FieldType.WELDED);
 
-		Shuffleboard.getTab("Autos")
+		Shuffleboard.getTab("Teleoperated")
 			.add("Field Type", kFieldType)
 			.withWidget(BuiltInWidgets.kComboBoxChooser)
 			.withSize(2, 1)
@@ -359,5 +358,6 @@ public class Constants {
 
 		public static final Translation2d reefCenterBlue = new Translation2d(4.5, 4.03);
 		public static final Translation2d reefCenterRed = new Translation2d(13.1, 4.03);
+		public static final Translation2d fieldCenter = new Translation2d(fieldWidth / 2, fieldHeight / 2);
 	}
 }

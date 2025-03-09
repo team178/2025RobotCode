@@ -4,17 +4,27 @@
 
 package frc.robot.commands;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 
 import choreo.Choreo;
 import choreo.trajectory.SwerveSample;
 import choreo.trajectory.Trajectory;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.networktables.GenericEntry;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import frc.robot.Constants;
+import frc.robot.Constants.FieldConstants;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorPosition;
 import frc.robot.subsystems.swerve.SwerveDrive;
@@ -23,22 +33,43 @@ import frc.robot.subsystems.swerve.SwerveDrive;
  * Utility class for generating autonomous routines.
  */
 public class Autos {
-    // private static final SendableChooser<AutoCommand> autoChooser =  new SendableChooser<>();
     private static final SendableChooser<StartingPositions> startingPositionChooser =  new SendableChooser<>();
-    private static final SendableChooser<ReefPositions> firstReefPositionChooser = new SendableChooser<>();
-    private static final SendableChooser<ReefPositions> secondReefPositionChooser = new SendableChooser<>();
-    private static final SendableChooser<ElevatorPosition> firstReefHeightChooser = new SendableChooser<>();
-    private static final SendableChooser<ElevatorPosition> secondReefHeightChooser = new SendableChooser<>();
+    private static GenericEntry autoStringFormEntry;
 
-    private static final HashMap<String, Trajectory<SwerveSample>> trajectories = new HashMap<>();
+    private static final double preemptiveElevatorInterval = 0.2; // seconds before reaching target for raising elevator (currently no delay implemented before preemptive intake)
+    private static final double elevatorAllowMovementTolerance = 0.1; // meters above home tolerated before allowing movement
 
-    private enum StartingPositions {
-        Left,
-        Right,
-        Center;
+    // all trajectories should be: (S-AA through S-AL, with S-AX through S-GL, then AY through LZ)
+    // 12 * 7 + 2 * 2 * 12
+    private static final HashMap<String, Trajectory<SwerveSample>> blueTrajectories = new HashMap<>();
+
+    private enum StartingPositions { // left to right
+        ALLYCAGELEFT(      "Ally Cage Left",       "S-A", 7.266),
+        ALLYCAGECENTER(    "Ally Cage Center",     "S-B", 6.171),
+        ALLYCAGERIGHT(     "Ally Cage Right",      "S-C", 5.075),
+        CENTER(            "Center",               "S-D", FieldConstants.fieldHeight / 2), // 4.026
+        OPPOSINGCAGELEFT(  "Opposing Cage Left",   "S-E", 3.002),
+        OPPOSINGCAGECENTER("Opposing Cage Center", "S-F", 1.906),
+        OPPOSINGCAGERIGHT( "Opposing Cage Right",  "S-G", 0.811),
+        ;
+
+        public final String name;
+        public final String fileKey;
+        public final double y;
+
+        // starting robot with center of robot on starting line, centered with the cage
+        public static final double blueX = 7.582;
+        public static final double redX = FieldConstants.fieldWidth - blueX; // 9.966
+
+        private StartingPositions(String name, String fileKey, double y) {
+            this.name = name;
+            this.fileKey = fileKey;
+            this.y = y;
+        }
     }
 
-    private enum ReefPositions  {
+    private enum AutoPositions { 
+        // A is close left reef, then go CCW
         A,
         B,
         C,
@@ -50,68 +81,32 @@ public class Autos {
         I,
         J,
         K,
-        L;
+        L,
+        
+        // (from the perspective of driver station)
+        Y, // left coral station
+        Z, // right coral station
+        ;
     }
 
-    /**
-     * Sets up options for SendableChoosers in Shuffleboard's "Auto" tab. Also calls loadTrajectories() to pre-load trajectories before auto begins.
-     * @param swerve Robot's swerve drive subsystem instance.
-     * @param elevator Robot's elevator subsystem instance.
-     */
-    public static void initAutos(SwerveDrive swerve, Elevator elevator) {
-        ShuffleboardTab tab = Shuffleboard.getTab("Auto");
-        
-        // Shuffleboard.getTab("Auto")
-        //     .add("Auto", autoChooser)
-        //     .withWidget(BuiltInWidgets.kSplitButtonChooser)
-        //     .withSize(9, 1);
+    static {
+        ShuffleboardTab tab = Shuffleboard.getTab("Autonomous ");
+        autoStringFormEntry = tab.add("Auto String", "")
+            .withPosition(0, 1)
+            .withSize(2, 1)
+            .getEntry();
 
-        for (StartingPositions position : StartingPositions.values()) {
-            if (position.equals(StartingPositions.Left)) {
-                startingPositionChooser.setDefaultOption(position.toString(), position);
+        for(StartingPositions position : StartingPositions.values()) {
+            if(position.equals(StartingPositions.CENTER)) {
+                startingPositionChooser.setDefaultOption(position.name, position);
             } else {
-                startingPositionChooser.addOption(position.toString(), position);
+                startingPositionChooser.addOption(position.name, position);
             }
         }
         tab.add("Starting Position", startingPositionChooser)
             .withWidget(BuiltInWidgets.kSplitButtonChooser)
-            .withSize(9, 1);
-
-        for (ReefPositions position : ReefPositions.values()) {
-            if (position.equals(ReefPositions.A)) {
-                firstReefPositionChooser.setDefaultOption(position.toString(), position);
-            } else {
-                firstReefPositionChooser.addOption(position.toString(), position);
-            }
-        }
-        tab.add("Leg 1 Reef Position", firstReefPositionChooser)
-            .withWidget(BuiltInWidgets.kSplitButtonChooser)
-            .withSize(9, 1);
-
-        firstReefHeightChooser.setDefaultOption("L3", ElevatorPosition.L3);
-        firstReefHeightChooser.addOption("L2", ElevatorPosition.L2);
-        firstReefHeightChooser.addOption("L1", ElevatorPosition.L1);
-        tab.add("Leg 1 Reef Height", firstReefHeightChooser)
-            .withWidget(BuiltInWidgets.kSplitButtonChooser)
-            .withSize(9, 1);
-        
-        for (ReefPositions position : ReefPositions.values()) {
-            if (position.equals(ReefPositions.A)) {
-                secondReefPositionChooser.setDefaultOption(position.toString(), position);
-            } else {
-                secondReefPositionChooser.addOption(position.toString(), position);
-        }
-        tab.add("Leg 2 Reef Position", secondReefPositionChooser)
-            .withWidget(BuiltInWidgets.kSplitButtonChooser)
-            .withSize(9, 1);
-        }
-
-        secondReefHeightChooser.setDefaultOption("L3", ElevatorPosition.L3);
-        secondReefHeightChooser.addOption("L2", ElevatorPosition.L2);
-        secondReefHeightChooser.addOption("L1", ElevatorPosition.L1);
-        tab.add("Leg 2 Reef Height", secondReefHeightChooser)
-            .withWidget(BuiltInWidgets.kSplitButtonChooser)
-            .withSize(9, 1);
+            .withPosition(0, 0)
+            .withSize(7, 1);
 
         loadTrajectories();
     }
@@ -120,28 +115,45 @@ public class Autos {
      * Loads all possible auto trajectories and stores them in a HashMap for later reference.
      */
     private static void loadTrajectories() {
-        // First trajectory (starting position to first reef score)
-        for (StartingPositions startingPosition : StartingPositions.values()) {
-            for (ReefPositions reefPosition : ReefPositions.values()) {
-                String trajectoryName1 = startingPosition.toString() + "To" + reefPosition.toString();
-                Optional<Trajectory<SwerveSample>> trajectory1 = Choreo.loadTrajectory(trajectoryName1);
+        // S-AA through S-GL
+        for(StartingPositions startingPosition : StartingPositions.values()) {
+            for(AutoPositions reefPosition : AutoPositions.values()) {
+                if(reefPosition.equals(AutoPositions.Y) || reefPosition.equals(AutoPositions.Z)) continue;
 
-                if (trajectory1.isPresent()) trajectories.put(trajectoryName1, trajectory1.get());
+                String trajectoryName = startingPosition.fileKey + reefPosition.name();
+                Optional<Trajectory<SwerveSample>> trajectory = Choreo.loadTrajectory(trajectoryName);
+
+                if(trajectory.isPresent()) {
+                    blueTrajectories.put(trajectoryName, trajectory.get());
+                } else {
+                    System.out.println("Trajectory " + trajectoryName + " not found");
+                }
             }
         }
         
-        for (ReefPositions reefPosition : ReefPositions.values()) {
-            // Second trajectory (first reef score to coral station)
-            String trajectoryName2 = reefPosition.toString() + "ToCoralStation";
-            Optional<Trajectory<SwerveSample>> trajectory2 = Choreo.loadTrajectory(trajectoryName2);
+        // AY through LZ, with calculated YA through ZL
+        for(AutoPositions reefPosition : AutoPositions.values()) {
+            if(reefPosition.equals(AutoPositions.Y) || reefPosition.equals(AutoPositions.Z)) continue;
+            
+            String trajectoryNameY = reefPosition.name() + "Y";
+            Optional<Trajectory<SwerveSample>> trajectoryY = Choreo.loadTrajectory(trajectoryNameY);
+            
+            if(trajectoryY.isPresent()) {
+                blueTrajectories.put(trajectoryNameY, trajectoryY.get());
+                blueTrajectories.put("Y" + reefPosition.name(), getReversedTrajectory(trajectoryY.get()));
+            } else {
+                System.out.println("Trajectory " + trajectoryNameY + " not found");
+            }
 
-            if (trajectory2.isPresent()) trajectories.put(trajectoryName2, trajectory2.get());
-
-            // Third trajectory (coral station to second reef score)
-            String trajectoryName3 = "CoralStationTo" + reefPosition.toString();
-            Optional<Trajectory<SwerveSample>> trajectory3 = Choreo.loadTrajectory(trajectoryName3);
-
-            if (trajectory3.isPresent()) trajectories.put(trajectoryName3, trajectory3.get());
+            String trajectoryNameZ = reefPosition.name() + "Z";
+            Optional<Trajectory<SwerveSample>> trajectoryZ = Choreo.loadTrajectory(trajectoryNameZ);
+            
+            if(trajectoryZ.isPresent()) {
+                blueTrajectories.put(trajectoryNameZ, trajectoryZ.get());
+                blueTrajectories.put("Z" + reefPosition.name(), getReversedTrajectory(trajectoryZ.get()));
+            } else {
+                System.out.println("Trajectory " + trajectoryNameZ + " not found");
+            }
         }
     }
 
@@ -151,57 +163,166 @@ public class Autos {
      * @param elevator Robot's elevator subsystem instance.
      * @return SequenceCommandGroup representing autonomous generated based on Shuffleboard selections.
      */
-    public static FullAutoCommand getAutoCommand(SwerveDrive swerve, Elevator elevator) {
-        String trajectoryName1 = startingPositionChooser.getSelected().toString() + "To" + firstReefPositionChooser.getSelected().toString();
-        String trajectoryName2 = firstReefPositionChooser.getSelected().toString() + "ToCoralStation";
-        String trajectoryName3 = "CoralStationTo" + secondReefPositionChooser.getSelected().toString();
+    public static Command getAutoCommand(SwerveDrive swerve, Elevator elevator) {
+        Command resetPoseCommand = Commands.run(() -> swerve.setPose(new Pose2d(
+            Constants.isRed() ? StartingPositions.redX : StartingPositions.blueX,
+            startingPositionChooser.getSelected().y,
+            Constants.isRed() ? Rotation2d.kZero : Rotation2d.k180deg)
+        ), swerve);
 
-        if (trajectories.get(trajectoryName1).getInitialPose(false).isPresent()) {
-            swerve.setPose(
-                trajectories.get(trajectoryName1).getInitialPose(false).get()
-            );
+        String rawAutoString = autoStringFormEntry.getString("");
+        if(rawAutoString.length() == 0) {
+            return resetPoseCommand;
         }
 
-        return (FullAutoCommand) runAutoToReef(trajectoryName1, firstReefHeightChooser.getSelected(), swerve, elevator)
-            .andThen(runAutoToCoralStation(trajectoryName2, 2.0, swerve, elevator))
-            .andThen(runAutoToReef(trajectoryName3, secondReefHeightChooser.getSelected(), swerve, elevator));
+        Trajectory<SwerveSample> startingTrajectory = blueTrajectories.get(startingPositionChooser.getSelected().fileKey + rawAutoString.substring(0, 1));
+        if(startingTrajectory == null) return resetPoseCommand.andThen(Commands.print("Starting trajectory not found"));
+        Command autoCommand = new FollowTrajectory(swerve, Constants.isRed() ? getRedTrajectory(startingTrajectory) : startingTrajectory);
+        String previousPosition = rawAutoString.substring(0, 1);
+
+        for(int i = 1; i < rawAutoString.length(); i++) {
+            String character = rawAutoString.substring(i, i + 1);
+            switch(character) {
+                case "0":
+                    autoCommand = autoCommand
+                        .andThen(elevator.runIntakeFromCoralStation());
+                    System.out.println("That's a weird auto routine... index " + i);
+                    break;
+                case "1":
+                    autoCommand = autoCommand
+                        .andThen(elevator.runScoreToElevatorPosition(ElevatorPosition.L1))
+                        .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
+                    System.out.println("That's a weird auto routine... index " + i);
+                    break;
+                case "2":
+                    autoCommand = autoCommand
+                        .andThen(elevator.runScoreToElevatorPosition(ElevatorPosition.L2))
+                        .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
+                    System.out.println("That's a weird auto routine... index " + i);
+                    break;
+                case "3":
+                    autoCommand = autoCommand
+                        .andThen(elevator.runScoreToElevatorPosition(ElevatorPosition.L3))
+                        .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
+                    System.out.println("That's a weird auto routine... index " + i);
+                    break;
+                case "A":
+                case "B":
+                case "C":
+                case "D":
+                case "E":
+                case "F":
+                case "G":
+                case "H":
+                case "I":
+                case "J":
+                case "K":
+                case "L":
+                    Trajectory<SwerveSample> trajectory = blueTrajectories.get(previousPosition + character);
+                    if(trajectory == null) return resetPoseCommand.andThen(Commands.print("Trajectory not found going to index " + i + ", trajectory " + previousPosition + character));
+                    Command followTrajectory = new FollowTrajectory(swerve, Constants.isRed() ? getRedTrajectory(trajectory) : trajectory);
+                    String next = i < rawAutoString.length() + 1 ? rawAutoString.substring(i + 1, i + 2) : "";
+                    switch(next) {
+                        case "0": // no delay with preemptive intake
+                            autoCommand = autoCommand
+                                .andThen(followTrajectory.alongWith(elevator.runIntakeFromCoralStation()));
+                            i++;
+                            break;
+                        case "1":
+                            autoCommand = autoCommand
+                                .andThen(followTrajectory.alongWith(
+                                    new WaitCommand(Math.max(trajectory.getTotalTime() - preemptiveElevatorInterval, 0))
+                                        .andThen(elevator.runScoreToElevatorPosition(ElevatorPosition.L1))
+                                )).andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
+                            i++;
+                            break;
+                        case "2":
+                            autoCommand = autoCommand
+                                .andThen(followTrajectory.alongWith(
+                                    new WaitCommand(Math.max(trajectory.getTotalTime() - preemptiveElevatorInterval, 0))
+                                        .andThen(elevator.runScoreToElevatorPosition(ElevatorPosition.L2))
+                                )).andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
+                            i++;
+                            break;
+                        case "3":
+                            autoCommand = autoCommand
+                                .andThen(followTrajectory.alongWith(
+                                    new WaitCommand(Math.max(trajectory.getTotalTime() - preemptiveElevatorInterval, 0))
+                                        .andThen(elevator.runScoreToElevatorPosition(ElevatorPosition.L3))
+                                )).andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
+                            i++;
+                            break;
+                        default:
+                            autoCommand = autoCommand.andThen(followTrajectory);
+                            break;
+                    }
+                    previousPosition = character;
+                    break;
+                default:
+                    return resetPoseCommand.andThen(Commands.print("Invalid character in auto string: " + character));
+            }
+        }
+
+        return resetPoseCommand.andThen(autoCommand);
     }
 
-    /**
-     * Generates a command to drive to the reef and score.
-     * @param trajectoryName Name of the drive trajectory for swerve base to follow.
-     * @param scoringHeight Preferred reef scoring height (L1, L2, or L3).
-     * @param swerve Robot's swerve drive subsystem instance.
-     * @param elevator Robot's elevatory subystem instance.
-     * @return Command to drive to and score on the reef.
-     */
-    private static AutoSegmentCommand runAutoToReef(String trajectoryName, ElevatorPosition scoringHeight, SwerveDrive swerve, Elevator elevator) {
-        Trajectory<SwerveSample> trajectory = trajectories.get(trajectoryName);
-        double trajectoryTime = trajectory.getTotalTime();
-        
-        return (AutoSegmentCommand) swerve.runFollowTrajectory(trajectory)
-            .alongWith(
-                new WaitCommand(trajectoryTime - 0.5) // TUNE THIS NUMBER TO FIND THE BEST TIME TO RAISE THE ELEVATOR BEFORE REACHING THE REEF
-                .andThen(elevator.runScoreToElevatorPosition(scoringHeight))
+    public static Trajectory<SwerveSample> getRedTrajectory(Trajectory<SwerveSample> blueTrajectory) {
+        List<SwerveSample> redSwerveSamples = blueTrajectory.samples().stream().map(sample -> {
+            Pose2d pose = new Pose2d(sample.x, sample.y, Rotation2d.fromRadians(sample.heading));
+            pose = pose.rotateAround(FieldConstants.fieldCenter, Rotation2d.k180deg);
+            double[] fx = Arrays.stream(sample.moduleForcesX()).map(force -> -force).toArray();
+            double[] fy = Arrays.stream(sample.moduleForcesY()).map(force -> -force).toArray();
+            return new SwerveSample(
+                sample.t,
+                pose.getX(),
+                pose.getY(),
+                pose.getRotation().getRadians(),
+                -sample.vx,
+                -sample.vy,
+                sample.omega,
+                -sample.ax,
+                -sample.ay,
+                sample.alpha,
+                fx,
+                fy
             );
+        }).toList();
+
+        return new Trajectory<>(
+            blueTrajectory.name() + "Red",
+            redSwerveSamples,
+            blueTrajectory.splits(),
+            blueTrajectory.events()
+        );
     }
 
-    /**
-     * Generates a command to drive to the coral station and intake.
-     * @param trajectoryName Name of the drive trajectory for swerve base to follow.
-     * @param coralStationLingerTime Amount of time to linger at the Coral Station in seconds.
-     * @param swerve Robot's swerve drive subsystem instance.
-     * @param elevator Robot's elevator subsystem instance.
-     * @return Command to drive to and intake on the reef.
-     */
-    private static AutoSegmentCommand runAutoToCoralStation(String trajectoryName, double coralStationLingerTime, SwerveDrive swerve, Elevator elevator) {
-        Trajectory<SwerveSample> trajectory = trajectories.get(trajectoryName);
-        double trajectoryTime = trajectory.getTotalTime();
-        
-        return (AutoSegmentCommand) swerve.runFollowTrajectory(trajectory)
-            .alongWith(
-                new WaitCommand(trajectoryTime-0.5) // TUNE THIS NUMBER TO FIND THE BEST TIME TO START INTAKING BEFORE REACHING THE CORAL STATION
-                .andThen(elevator.runIntakeFromCoralStation())
+    public static Trajectory<SwerveSample> getReversedTrajectory(Trajectory<SwerveSample> trajectory) {
+        double trajectoryDuration = trajectory.getFinalSample(false).isPresent() ? trajectory.getFinalSample(false).get().t : 0;
+        List<SwerveSample> reversedSwerveSamples = trajectory.samples().stream().map(sample -> {
+            double[] fx = Arrays.stream(sample.moduleForcesX()).map(force -> -force).toArray();
+            double[] fy = Arrays.stream(sample.moduleForcesY()).map(force -> -force).toArray();
+            return new SwerveSample(
+                trajectoryDuration - sample.t,
+                sample.x,
+                sample.y,
+                sample.heading,
+                -sample.vx,
+                -sample.vy,
+                -sample.omega,
+                -sample.ax,
+                -sample.ay,
+                -sample.alpha,
+                fx,
+                fy
             );
+        }).toList();
+        Collections.reverse(reversedSwerveSamples);
+
+        return new Trajectory<>(
+            trajectory.name() + "Reversed",
+            reversedSwerveSamples,
+            List.of(0),
+            List.of()
+        );
     }
 }

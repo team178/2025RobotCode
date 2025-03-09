@@ -1,7 +1,6 @@
 package frc.robot.subsystems.swerve;
 
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
@@ -11,16 +10,13 @@ import org.littletonrobotics.junction.AutoLogOutput;
 import org.littletonrobotics.junction.LoggedRobot;
 import org.littletonrobotics.junction.Logger;
 
-import choreo.Choreo;
 import choreo.trajectory.SwerveSample;
-import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Twist2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -33,7 +29,6 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -46,7 +41,6 @@ import frc.robot.Constants.SwerveConstants;
 public class SwerveDrive extends SubsystemBase {
     //! to be implementated later
     public static final Lock odometryLock = new ReentrantLock();
-    private SysIdRoutine sysId;
 
     private static final boolean useOdometryForFieldRelative = true;
 
@@ -286,21 +280,6 @@ public class SwerveDrive extends SubsystemBase {
         );
 
         runChassisSpeeds(speeds, true, true);
-    }
-
-    public Command runFollowTrajectory(Trajectory<SwerveSample> trajectory) {
-        Timer timer = new Timer();
-        timer.reset();
-
-        return run(() -> {
-            if (trajectory.sampleAt(timer.get(), isRedAlliance()) != null) {
-                followSwerveSample(trajectory.sampleAt(timer.get(), isRedAlliance()).get());
-            }
-        });
-    }
-
-    private static boolean isRedAlliance() {
-        return DriverStation.getAlliance().orElse(Alliance.Blue).equals(Alliance.Red);
     }
 
     public void setPose(Pose2d pose) {
