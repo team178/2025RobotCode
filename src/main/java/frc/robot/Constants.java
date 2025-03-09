@@ -363,8 +363,8 @@ public class Constants {
 		public static final Translation2d reefCenterRed = new Translation2d(13.063, 4.026);
 		public static final Transform2d betweenReefsTransform = new Transform2d(reefCenterRed.minus(reefCenterBlue), Rotation2d.kZero);
 
-		public static final Pose2d blueCloseLeftReef = new Pose2d(3.174, 4.193, Rotation2d.kZero);
-	    public static final Pose2d blueCloseRightReef = new Pose2d(3.174, 3.868, Rotation2d.kZero);
+		public static final Pose2d blueCloseLeftReef = new Pose2d(3.23, 4.191, Rotation2d.kZero);
+	    public static final Pose2d blueCloseRightReef = new Pose2d(3.23, 3.861, Rotation2d.kZero);
 		public static final Pose2d redFarLeftReef = blueCloseLeftReef.plus(betweenReefsTransform);
 		public static final Pose2d redFarRightReef = blueCloseRightReef.plus(betweenReefsTransform);
 	}
