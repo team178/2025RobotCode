@@ -5,7 +5,9 @@ import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
@@ -339,10 +341,10 @@ public class Constants {
 
 	// TODO adjust
 	public static class VisionConstants {
-		public static final double linearStdDevBaseline = 0.02;
-		public static final double angularStdDevBaseline = 0.06;
+		public static final double linearStdDevBaseline = 8;
+		public static final double angularStdDevBaseline = Double.POSITIVE_INFINITY;
 
-		public static final double linearStdDevMT2Factor = 0.5;
+		public static final double linearStdDevMT2Factor = 0.1;
 		public static final double angularStdDevMT2Factor = Double.POSITIVE_INFINITY;
 
 	}
@@ -356,8 +358,14 @@ public class Constants {
 		public static final double fieldWidth = 17.548; // m
 		public static final double fieldHeight = 8.052; // m
 
-		public static final Translation2d reefCenterBlue = new Translation2d(4.5, 4.03);
-		public static final Translation2d reefCenterRed = new Translation2d(13.1, 4.03);
+		public static final Translation2d reefCenterBlue = new Translation2d(4.485, 4.026);
+		public static final Translation2d reefCenterRed = new Translation2d(13.063, 4.026);
 		public static final Translation2d fieldCenter = new Translation2d(fieldWidth / 2, fieldHeight / 2);
+		public static final Transform2d betweenReefsTransform = new Transform2d(reefCenterRed.minus(reefCenterBlue), Rotation2d.kZero);
+
+		public static final Pose2d blueCloseLeftReef = new Pose2d(3.23, 4.191, Rotation2d.kZero);
+	    public static final Pose2d blueCloseRightReef = new Pose2d(3.23, 3.861, Rotation2d.kZero);
+		public static final Pose2d redFarLeftReef = blueCloseLeftReef.plus(betweenReefsTransform);
+		public static final Pose2d redFarRightReef = blueCloseRightReef.plus(betweenReefsTransform);
 	}
 }

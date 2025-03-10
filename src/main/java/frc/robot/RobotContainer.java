@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.Autos;
+import frc.robot.Constants.RobotMode;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
@@ -27,6 +28,7 @@ import frc.robot.subsystems.vision.LimelightLocations;
 import frc.robot.subsystems.vision.Vision;
 import frc.robot.subsystems.vision.VisionIO;
 import frc.robot.subsystems.vision.VisionIOLimelight;
+import frc.robot.util.Combo;
 
 public class RobotContainer {
     private CommandXboxController driverController;
@@ -55,12 +57,12 @@ public class RobotContainer {
                 );
                 elevator = new Elevator(new ElevatorIOSpark());
                 // manipulator = new Manipulator(new ManipulatorIOSpark());
-                // vision = new Vision(
-                //     swerve::addVisionMeasurement,
-                //     new VisionIOLimelight(LimelightLocations.FRONT3, swerve.getPose()::getRotation),
-                //     new VisionIOLimelight(LimelightLocations.HIGH2PLUS, swerve.getPose()::getRotation),
-                //     new VisionIOLimelight(LimelightLocations.SIDE2, swerve.getPose()::getRotation)
-                // );
+                vision = new Vision(
+                    swerve::addVisionMeasurement,
+                    new VisionIOLimelight(LimelightLocations.FRONT3, () -> swerve.getPose().getRotation()),
+                    new VisionIOLimelight(LimelightLocations.HIGH3, () -> swerve.getPose().getRotation()),
+                    new VisionIOLimelight(LimelightLocations.SIDE2, () -> swerve.getPose().getRotation())
+                );
                 break;
             default:
                 swerve = new SwerveDrive(
@@ -80,28 +82,34 @@ public class RobotContainer {
 
     private void configureBindings() {
         swerve.setToAimSuppliers(
-            driverController.x()::getAsBoolean,
-            driverController.b()::getAsBoolean,
-            driverController.a()::getAsBoolean
+            driverController.x()::getAsBoolean, // aim reef
+            driverController.b()::getAsBoolean, // aim processor
+            driverController.a()::getAsBoolean // aim station
+        );
+        swerve.setToPosSuppliers(
+            driverController.povLeft()::getAsBoolean, // left reef
+            driverController.povRight()::getAsBoolean, // right reef
+            driverController.povDown()::getAsBoolean // processor
         );
         swerve.setDefaultCommand(swerve.runDriveInputs(
-            driverController::getLeftX,
-            driverController::getLeftY,
-            driverController::getRightX,
-            driverController::getRightTriggerAxis,
-            driverController.leftBumper()::getAsBoolean,
-            driverController.rightBumper()::getAsBoolean
+            driverController::getLeftX, // vx
+            driverController::getLeftY, // vy
+            driverController::getRightX, // omega
+            driverController::getRightTriggerAxis, // raw slow input
+            driverController.leftBumper()::getAsBoolean, // robot centric
+            driverController.rightBumper()::getAsBoolean // no optimize
         ));
 
         driverController.y().onTrue(swerve.runZeroGyro());
         driverController.back().onTrue(swerve.runToggleToXPosition(true));
         
-
-        // swerve.setDefaultCommand(swerve.runSimOdometryMoveBy(
-        //     driverController::getLeftX,
-        //     driverController::getLeftY,
-        //     driverController::getRightX
-        // ));
+        // if(Constants.simMode.equals(RobotMode.SIM)) {
+        //     swerve.setDefaultCommand(swerve.runSimOdometryMoveBy(
+        //         driverController::getLeftX,
+        //         driverController::getLeftY,
+        //         driverController::getRightX
+        //     ));
+        // }
 
         // driverController.a().onTrue(swerve.runTestDrive());
         // driverController.a().onFalse(swerve.runStopDrive());
@@ -134,6 +142,19 @@ public class RobotContainer {
         auxController.leftTrigger().onFalse(elevator.runEffector(0, 0));
         auxController.rightBumper().onTrue(elevator.runSetFunnelVolts(-2));
         auxController.rightBumper().onFalse(elevator.runSetFunnelVolts(0));
+
+        // Combo testCombo = new Combo("test combo", 1,
+        //     driverController.a(),
+        //     driverController.a().negate(),
+        //     driverController.b(),
+        //     driverController.b().negate(),
+        //     driverController.x(),
+        //     driverController.x().negate(),
+        //     driverController.a(),
+        //     driverController.a().negate(),
+        //     driverController.y()
+        // );
+        // testCombo.getTrigger().onTrue(Commands.print("triggered"));
     }
 
     public Command getAutonomousCommand() {

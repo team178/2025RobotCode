@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoubleArraySubscriber;
 import edu.wpi.first.networktables.DoubleSubscriber;
@@ -42,6 +43,7 @@ public class VisionIOLimelight implements VisionIO {
      */
     public VisionIOLimelight(LimelightLocations location, Supplier<Rotation2d> yawSupplier) {
         NetworkTable ioNT = NetworkTableInstance.getDefault().getTable(location.name); // hostname defaults to "limelight" in limelight config
+        limelightLocation = location;
 
         orientationPublisher = ioNT.getDoubleArrayTopic("robot_orientation_set").publish();
         txSubscriber = ioNT.getDoubleTopic("tx").subscribe(0);
@@ -75,8 +77,8 @@ public class VisionIOLimelight implements VisionIO {
         TimestampedDoubleArray lastRawMT2Data = dataMT2Subscriber.getAtomic();
         inputs.lastTimestampMT1 = lastRawMT1Data.timestamp;
         inputs.lastTimestampMT2 = lastRawMT2Data.timestamp;
-        inputs.lastPoseObservationMT1 = parsePosition(lastRawMT1Data.value, lastRawMT1Data.timestamp * 1e-6, false);
-        inputs.lastPoseObservationMT2 = parsePosition(lastRawMT2Data.value, lastRawMT2Data.timestamp * 1e-6, true);
+        if(lastRawMT1Data.value.length >= 11) inputs.lastPoseObservationMT1 = parsePosition(lastRawMT1Data.value, lastRawMT1Data.timestamp * 1e-6, false);
+        if(lastRawMT2Data.value.length >= 11) inputs.lastPoseObservationMT2 = parsePosition(lastRawMT2Data.value, lastRawMT2Data.timestamp * 1e-6, true);
         if(lastRawMT1Data.value.length >= 11) {
             int tagCountMT1 = (int) lastRawMT1Data.value[7];
             double averageTagDistanceMT1 = lastRawMT1Data.value[9];
@@ -89,8 +91,8 @@ public class VisionIOLimelight implements VisionIO {
         }
 
         // update all pose observations in last robot code loop
-        TimestampedDoubleArray[] subscriberDataMT1 = Arrays.stream(dataMT1subscriber.readQueue()).filter(element -> element.value.length >= 11).toArray(TimestampedDoubleArray[]::new);
-        TimestampedDoubleArray[] subscriberDataMT2 = Arrays.stream(dataMT2Subscriber.readQueue()).filter(element -> element.value.length >= 11).toArray(TimestampedDoubleArray[]::new);
+        TimestampedDoubleArray[] subscriberDataMT1 = Arrays.stream(dataMT1subscriber.readQueue()).filter(element -> element.value.length > 11).toArray(TimestampedDoubleArray[]::new);
+        TimestampedDoubleArray[] subscriberDataMT2 = Arrays.stream(dataMT2Subscriber.readQueue()).filter(element -> element.value.length > 11).toArray(TimestampedDoubleArray[]::new);
         PoseObservation[] poseObservations = new PoseObservation[subscriberDataMT1.length + subscriberDataMT2.length];
         Set<Integer> tagIds = new HashSet<>();
         double[][] stdDevsMT1 = new double[subscriberDataMT1.length][2];
@@ -142,6 +144,10 @@ public class VisionIOLimelight implements VisionIO {
         double latency = rawMegatagData[6];
         int tagCount = (int) rawMegatagData[7];
         double averageTagDistance = rawMegatagData[9];
+
+        roll = Units.degreesToRadians(roll);
+        pitch = Units.degreesToRadians(pitch);
+        yaw = Units.degreesToRadians(yaw);
 
         double observationTimestamp = timestampSeconds - latency * 1e-3;
         Pose3d pose = new Pose3d(x, y, z, new Rotation3d(roll, pitch, yaw));
