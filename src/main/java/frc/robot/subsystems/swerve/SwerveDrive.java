@@ -30,6 +30,11 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -75,11 +80,15 @@ public class SwerveDrive extends SubsystemBase {
 
     private double lastMove;
 
-    //! Vision to be added
+    private Field2d startingPositionVisualizer;
+    private Field2d autoTrajectoriesVisualizer;
+
+    private SendableChooser<FieldZones> tempZoneViewerChooser;
 
     public SwerveDrive(GyroIO gyroIO, SDSModuleIO FLModuleIO, SDSModuleIO FRModuleIO, SDSModuleIO BLModuleIO, SDSModuleIO BRModuleIO) {
         initComponents(gyroIO, FLModuleIO, FRModuleIO, BLModuleIO, BRModuleIO);
         initMathModels();
+        initAutoDashboards();
     }
 
     private void initComponents(GyroIO gyroIO, SDSModuleIO FLModuleIO, SDSModuleIO FRModuleIO, SDSModuleIO BLModuleIO, SDSModuleIO BRModuleIO) {
@@ -108,9 +117,9 @@ public class SwerveDrive extends SubsystemBase {
         poseEstimator = new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, modulePositions, (Constants.isRed() ? new Pose2d(17.548, 8.052, Rotation2d.kPi) : new Pose2d()));
 
         presetPosController = new PIDController(
-            SwerveConstants.kPresetRotControlConstants.kP(),
-            SwerveConstants.kPresetRotControlConstants.kI(),
-            SwerveConstants.kPresetRotControlConstants.kD()
+            SwerveConstants.kPresetPosControlConstants.kP(),
+            SwerveConstants.kPresetPosControlConstants.kI(),
+            SwerveConstants.kPresetPosControlConstants.kD()
         );
 
         trajVXController = new PIDController(10, 0, 0);
@@ -119,6 +128,18 @@ public class SwerveDrive extends SubsystemBase {
         trajHeadingController.enableContinuousInput(0, 2 * Math.PI);
 
         lastMove = Timer.getFPGATimestamp();
+    }
+
+    private void initAutoDashboards() {
+        startingPositionVisualizer = new Field2d();
+        // startingPositionVisualizer.getRobotObject().
+
+        tempZoneViewerChooser = new SendableChooser<>();
+        tempZoneViewerChooser.setDefaultOption("OPPOSITE", FieldZones.OPPOSITE);
+        for(FieldZones zone : FieldZones.values()) {
+            if(!zone.equals(FieldZones.OPPOSITE)) tempZoneViewerChooser.addOption(zone.name(), zone);
+        }
+        Shuffleboard.getTab("Teleoperated").add(tempZoneViewerChooser).withWidget(BuiltInWidgets.kComboBoxChooser).withPosition(1, 1).withSize(1, 1);
     }
 
     public void setToAimSuppliers(BooleanSupplier goAimReef, BooleanSupplier goAimProcessor, BooleanSupplier goAimStation) {
@@ -219,37 +240,27 @@ public class SwerveDrive extends SubsystemBase {
     }
 
     public void injectPresetPosition(ChassisSpeeds chassisSpeeds, boolean fieldRelative, boolean optimize) {
-        if(goPosLeftReef.getAsBoolean()) {
+        if(goPosLeftReef.getAsBoolean() || goPosRightReef.getAsBoolean()) {
             if(fieldZone.equals(FieldZones.OPPOSITE)) {
                 runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
                 return;
             }
-            Pose2d desiredPose = fieldZone.leftReefPose;
-            Pose2d errorPose = getPose().transformBy(new Transform2d(desiredPose, new Pose2d()));
+            Pose2d desiredPose = goPosLeftReef.getAsBoolean() ? fieldZone.leftReefPose : fieldZone.rightReefPose;
+            Pose2d errorPose = new Pose2d(getPose().getX() - desiredPose.getX(), getPose().getY() - desiredPose.getY(), getPose().getRotation());
+            errorPose = errorPose.rotateAround(Translation2d.kZero, desiredPose.getRotation().unaryMinus());
+            Logger.recordOutput("Swerve/desiredPose", desiredPose);
+            Logger.recordOutput("Swerve/errorPose", errorPose);
             double vyReefRelative = presetPosController.calculate(errorPose.getY(), 0);
+            Logger.recordOutput("Swerve/vyReefRelative", vyReefRelative);
             
             ChassisSpeeds fieldRelativeSpeeds = fieldRelative ? 
                 (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
                 ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
+            Logger.recordOutput("Swerve/fieldRelativeSpeedsNoFilter", fieldRelativeSpeeds);
             ChassisSpeeds reefRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, fieldZone.rotation());
             reefRelativeSpeeds.vyMetersPerSecond = vyReefRelative;
             fieldRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(reefRelativeSpeeds, fieldZone.rotation());
-            runChassisSpeeds(fieldRelativeSpeeds, true, optimize, true);
-        } else if(goPosRightReef.getAsBoolean()) {
-            if(fieldZone.equals(FieldZones.OPPOSITE)) {
-                runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
-                return;
-            }
-            Pose2d desiredPose = fieldZone.rightReefPose;
-            Pose2d errorPose = getPose().transformBy(new Transform2d(desiredPose, new Pose2d()));
-            double vyReefRelative = presetPosController.calculate(errorPose.getY(), 0);
-            
-            ChassisSpeeds fieldRelativeSpeeds = fieldRelative ? 
-                (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
-                ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
-            ChassisSpeeds reefRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, fieldZone.rotation());
-            reefRelativeSpeeds.vyMetersPerSecond = vyReefRelative;
-            fieldRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(reefRelativeSpeeds, fieldZone.rotation());
+            Logger.recordOutput("Swerve/fieldRelativeSpeedsReef", fieldRelativeSpeeds);
             runChassisSpeeds(fieldRelativeSpeeds, true, optimize, true);
         } else if(goPosProcessor.getAsBoolean()) {
             double vx = switch(Constants.kFieldType.getSelected()) {
@@ -523,6 +534,8 @@ public class SwerveDrive extends SubsystemBase {
                     .getAngle()
             )
         ;
-        Logger.recordOutput("Zone", fieldZone);
+        Logger.recordOutput("Swerve/Zone", fieldZone);
+        Logger.recordOutput("Swerve/TempZoneLeftReefPose", tempZoneViewerChooser.getSelected().leftReefPose);
+        Logger.recordOutput("Swerve/TempZoneRightReefPose", tempZoneViewerChooser.getSelected().rightReefPose);
     }
 }
