@@ -43,8 +43,6 @@ public class SwerveDrive extends SubsystemBase {
     //! to be implementated later
     public static final Lock odometryLock = new ReentrantLock();
 
-    private static final boolean useOdometryForFieldRelative = true;
-
     private GyroIO gyroIO;
     private GyroIOInputsAutoLogged gyroIOInputs;
     private SDSSwerveModule[] modules;
@@ -236,7 +234,7 @@ public class SwerveDrive extends SubsystemBase {
             ChassisSpeeds reefRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, fieldZone.rotation());
             reefRelativeSpeeds.vyMetersPerSecond = vyReefRelative;
             fieldRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(reefRelativeSpeeds, fieldZone.rotation());
-            runChassisSpeeds(fieldRelativeSpeeds, true, optimize);
+            runChassisSpeeds(fieldRelativeSpeeds, true, optimize, true);
         } else if(goPosRightReef.getAsBoolean()) {
             if(fieldZone.equals(FieldZones.OPPOSITE)) {
                 runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
@@ -252,7 +250,7 @@ public class SwerveDrive extends SubsystemBase {
             ChassisSpeeds reefRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, fieldZone.rotation());
             reefRelativeSpeeds.vyMetersPerSecond = vyReefRelative;
             fieldRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(reefRelativeSpeeds, fieldZone.rotation());
-            runChassisSpeeds(fieldRelativeSpeeds, true, optimize);
+            runChassisSpeeds(fieldRelativeSpeeds, true, optimize, true);
         } else if(goPosProcessor.getAsBoolean()) {
             double vx = switch(Constants.kFieldType.getSelected()) {
                 case ANDYMARK -> presetPosController.calculate(getPose().getX(), Constants.isRed() ? FieldConstants.fieldWidth - 6.27 : 6.27);
@@ -263,10 +261,19 @@ public class SwerveDrive extends SubsystemBase {
                 (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
                 ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
             fieldRelativeSpeeds.vxMetersPerSecond = vx;
-            runChassisSpeeds(chassisSpeeds, true, optimize);
+            runChassisSpeeds(chassisSpeeds, true, optimize, true);
         } else {
             runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
         }
+    }
+
+    public void runChassisSpeeds(ChassisSpeeds chassisSpeeds, boolean fieldRelative, boolean optimize, boolean alreadyRedFlipped) {
+        if(alreadyRedFlipped) {
+            // flip twice to prevent flipping
+            runChassisSpeeds(Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds, fieldRelative, optimize);
+            return;
+        }
+        runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
     }
 
     public void runChassisSpeeds(ChassisSpeeds chassisSpeeds, boolean fieldRelative, boolean optimize) {
@@ -281,9 +288,7 @@ public class SwerveDrive extends SubsystemBase {
         if(fieldRelative) {
             adjustedSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
                 chassisSpeeds,
-                useOdometryForFieldRelative ?
-                    getPose().getRotation().rotateBy(new Rotation2d(Constants.isRed() ? Math.PI : 0)) :
-                    rawGyroRotation
+                getPose().getRotation().rotateBy(new Rotation2d(Constants.isRed() ? Math.PI : 0))
             );
         }
         adjustedSpeeds = ChassisSpeeds.discretize(adjustedSpeeds, LoggedRobot.defaultPeriodSecs);
