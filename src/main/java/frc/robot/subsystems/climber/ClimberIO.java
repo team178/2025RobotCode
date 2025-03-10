@@ -17,7 +17,7 @@ public interface ClimberIO {
 
     public default void setVolts(double volts) {}
 
-    public default void setPos(double encoderValue, double kG) {}
+    // public default void setPos(double encoderValue, double kG) {}
 
     public default void setReference(double p) {}
 }

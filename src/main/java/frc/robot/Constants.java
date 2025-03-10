@@ -294,8 +294,6 @@ public class Constants {
 		 * downVolts
 		 * upVolts
 		 * kClimbG
-		 * minVel
-		 * maxVel
 		 */
 	
 		public static final int kClimberMotorCANID = 25;
@@ -313,16 +311,12 @@ public class Constants {
 
 		public static final double kSetG = 0;
 		public static final double kClimbG = 0;
-		public static final double kLightG = 0;
 
 		public static final double setEncoderValue = 0;
 		public static final double initialEncoderValue = 0;
 
 		public static final double minPos = 0;
 		public static final double maxPos = 0;
-
-		public static final double maxVel = 0;
-		public static final double minVel = 0;
 
 		static {
 			climberSetConfig

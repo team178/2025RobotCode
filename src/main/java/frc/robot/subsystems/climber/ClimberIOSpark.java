@@ -21,15 +21,11 @@ public class ClimberIOSpark implements ClimberIO {
     private RelativeEncoder encoder;
     private SparkClosedLoopController pid;
 
-    private boolean prevSet;
     private boolean prevUp;
     private boolean prevDown;
 
     private boolean up;
     private boolean down;
-
-    private double kG;
-    private boolean isLocked;
 
     public SparkMaxConfig climberSetConfig;
 
@@ -41,15 +37,11 @@ public class ClimberIOSpark implements ClimberIO {
         // climberMotor.configure(ClimberConstants.climberSetConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         // pid.setReference(ClimberConstants.initialEncoderValue, ControlType.kPosition, ClosedLoopSlot.kSlot0, ClimberConstants.kSetG, ArbFFUnits.kVoltage);
 
-        prevSet = true;
         prevUp = false;
         prevDown = false;
 
         up = false;
         down = false;
-
-        kG = ClimberConstants.kClimbG;
-        isLocked = true;
 
         climberSetConfig = new SparkMaxConfig();
         climberSetConfig
@@ -69,8 +61,8 @@ public class ClimberIOSpark implements ClimberIO {
 
     @Override
     public void climberInputs(boolean set, boolean up, boolean down) {
-        if(set && !prevSet && !up && !down) {
-            isLocked = false;
+        if(set && !up && !down) {
+            // isLocked = false;
             pid.setReference(
                 ClimberConstants.setEncoderValue,
                 ControlType.kPosition,
@@ -80,24 +72,23 @@ public class ClimberIOSpark implements ClimberIO {
             );
         }
         if(up && !this.up) {
-            isLocked = false;
+            // isLocked = false;
             climberMotor.setVoltage(ClimberConstants.upVolts);
         }
         if(!up && down && !this.down) {
-            isLocked = false;
+            // isLocked = false;
             climberMotor.setVoltage(ClimberConstants.downVolts);
         }
-        if(!this.up && ((!up && prevUp) || (!up && !down && prevDown))) {
-            isLocked = true;
+        if(!this.up && !up  && !down && (prevUp || prevDown)) {
+            // isLocked = true;
             pid.setReference(
                 encoder.getPosition(),
                 ControlType.kPosition,
                 ClosedLoopSlot.kSlot0,
-                kG,
+                ClimberConstants.kClimbG,
                 ArbFFUnits.kVoltage
             );
         }
-        prevSet = set;
         prevUp = up;
         prevDown = down;
     }
@@ -121,17 +112,9 @@ public class ClimberIOSpark implements ClimberIO {
                 encoder.getPosition(),
                 ControlType.kPosition,
                 ClosedLoopSlot.kSlot0,
-                kG,
+                ClimberConstants.kClimbG,
                 ArbFFUnits.kVoltage
             );
-        }
-
-        if(isLocked && (encoder.getVelocity() > ClimberConstants.maxVel)) {
-            kG = ClimberConstants.kClimbG;
-        }
-        
-        if(isLocked && (encoder.getVelocity() < ClimberConstants.minVel)) {
-            kG = ClimberConstants.kLightG;
         }
     }
 
@@ -143,11 +126,6 @@ public class ClimberIOSpark implements ClimberIO {
     @Override
     public double getPos() {
         return encoder.getPosition();
-    }
-
-    @Override
-    public void setPos(double volts, double kG) {
-        pid.setReference(volts, ControlType.kPosition, ClosedLoopSlot.kSlot0, kG, ArbFFUnits.kVoltage);
     }
 
     @Override
