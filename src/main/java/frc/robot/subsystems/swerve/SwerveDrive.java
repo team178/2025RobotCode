@@ -42,7 +42,6 @@ import frc.robot.Constants.SwerveConstants;
 public class SwerveDrive extends SubsystemBase {
     //! to be implementated later
     public static final Lock odometryLock = new ReentrantLock();
-    private SysIdRoutine sysId;
 
     private static final boolean useOdometryForFieldRelative = true;
 
