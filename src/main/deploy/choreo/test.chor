@@ -4,52 +4,151 @@
  "type":"Swerve",
  "variables":{
   "expressions":{},
-  "poses":{}
+  "poses":{
+   "S_A":{
+    "x":{
+     "exp":"7.1756 m",
+     "val":7.1756
+    },
+    "y":{
+     "exp":"7.266 m",
+     "val":7.266
+    },
+    "heading":{
+     "exp":"180 deg",
+     "val":3.141592653589793
+    }
+   },
+   "S_B":{
+    "x":{
+     "exp":"S_A.x",
+     "val":7.1756
+    },
+    "y":{
+     "exp":"6.171 m",
+     "val":6.171
+    },
+    "heading":{
+     "exp":"S_A.heading",
+     "val":3.141592653589793
+    }
+   },
+   "S_C":{
+    "x":{
+     "exp":"S_A.x",
+     "val":7.1756
+    },
+    "y":{
+     "exp":"5.075 m",
+     "val":5.075
+    },
+    "heading":{
+     "exp":"S_A.heading",
+     "val":3.141592653589793
+    }
+   },
+   "S_D":{
+    "x":{
+     "exp":"S_A.x",
+     "val":7.1756
+    },
+    "y":{
+     "exp":"4.026 m",
+     "val":4.026
+    },
+    "heading":{
+     "exp":"S_A.heading",
+     "val":3.141592653589793
+    }
+   },
+   "S_E":{
+    "x":{
+     "exp":"S_A.x",
+     "val":7.1756
+    },
+    "y":{
+     "exp":"3.002 m",
+     "val":3.002
+    },
+    "heading":{
+     "exp":"S_A.heading",
+     "val":3.141592653589793
+    }
+   },
+   "S_F":{
+    "x":{
+     "exp":"S_A.x",
+     "val":7.1756
+    },
+    "y":{
+     "exp":"1.906 m",
+     "val":1.906
+    },
+    "heading":{
+     "exp":"S_A.heading",
+     "val":3.141592653589793
+    }
+   },
+   "S_G":{
+    "x":{
+     "exp":"S_A.x",
+     "val":7.1756
+    },
+    "y":{
+     "exp":"0.881 m",
+     "val":0.881
+    },
+    "heading":{
+     "exp":"S_A.heading",
+     "val":3.141592653589793
+    }
+   }
+  }
  },
  "config":{
   "frontLeft":{
    "x":{
-    "exp":"11 in",
-    "val":0.2794
+    "exp":"10 in",
+    "val":0.254
    },
    "y":{
-    "exp":"11 in",
-    "val":0.2794
+    "exp":"10 in",
+    "val":0.254
    }
   },
   "backLeft":{
    "x":{
-    "exp":"-11 in",
-    "val":-0.2794
+    "exp":"-10 in",
+    "val":-0.254
    },
    "y":{
-    "exp":"11 in",
-    "val":0.2794
+    "exp":"10 in",
+    "val":0.254
    }
   },
   "mass":{
-   "exp":"150 lbs",
-   "val":68.0388555
+   "exp":"125 lbs",
+   "val":56.69904625
   },
   "inertia":{
    "exp":"6 kg m ^ 2",
    "val":6.0
   },
   "gearing":{
-   "exp":"6.5",
-   "val":6.5
+   "exp":"6.12",
+   "val":6.12
   },
   "radius":{
-   "exp":"2 in",
-   "val":0.0508
+   "exp":"3 in",
+   "val":0.07619999999999999
   },
   "vmax":{
-   "exp":"6000 RPM",
-   "val":628.3185307179587
+   "exp":"4540.8 RPM",
+   "val":475.511464047351
   },
   "tmax":{
-   "exp":"1.2 N * m",
-   "val":1.2
+   "exp":"1.064 N * m",
+   "val":1.064
   },
   "cof":{
    "exp":"1.5",
