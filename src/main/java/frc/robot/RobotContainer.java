@@ -39,6 +39,8 @@ public class RobotContainer {
     private Manipulator manipulator;
     private Vision vision;
 
+    private Command autoCommand;
+
     public RobotContainer() {
         Preferences.removeAll();
         driverController = new CommandXboxController(OperatorConstants.kDriverControllerPort);
@@ -78,6 +80,7 @@ public class RobotContainer {
         }
 
         configureBindings();
+        updateAutoCommand(); // ensure Autos class is loaded into memory
     }
 
     private void configureBindings() {
@@ -162,7 +165,12 @@ public class RobotContainer {
         // testCombo.getTrigger().onTrue(Commands.print("triggered"));
     }
 
+    private void updateAutoCommand() {
+        autoCommand = Autos.getAutoCommand(swerve, elevator);
+    }
+
     public Command getAutonomousCommand() {
-        return Autos.getAutoCommand(swerve, elevator);
+        updateAutoCommand();
+        return autoCommand;
     }
 }

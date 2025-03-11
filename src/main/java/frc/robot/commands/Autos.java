@@ -7,6 +7,7 @@ package frc.robot.commands;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,13 +45,13 @@ public class Autos {
     private static final HashMap<String, Trajectory<SwerveSample>> blueTrajectories = new HashMap<>();
 
     private enum StartingPositions { // left to right
-        ALLYCAGELEFT(      "Ally Cage Left",       "S-A", 7.266),
-        ALLYCAGECENTER(    "Ally Cage Center",     "S-B", 6.171),
-        ALLYCAGERIGHT(     "Ally Cage Right",      "S-C", 5.075),
-        CENTER(            "Center",               "S-D", FieldConstants.fieldHeight / 2), // 4.026
-        OPPOSINGCAGELEFT(  "Opposing Cage Left",   "S-E", 3.002),
-        OPPOSINGCAGECENTER("Opposing Cage Center", "S-F", 1.906),
-        OPPOSINGCAGERIGHT( "Opposing Cage Right",  "S-G", 0.811),
+        ALLYCAGELEFT(      "Ally Cage Left",       "S_A", 7.266),
+        ALLYCAGECENTER(    "Ally Cage Center",     "S_B", 6.171),
+        ALLYCAGERIGHT(     "Ally Cage Right",      "S_C", 5.075),
+        CENTER(            "Center",               "S_D", FieldConstants.fieldHeight / 2), // 4.021
+        OPPOSINGCAGELEFT(  "Opposing Cage Left",   "S_E", 3.002),
+        OPPOSINGCAGECENTER("Opposing Cage Center", "S_F", 1.906),
+        OPPOSINGCAGERIGHT( "Opposing Cage Right",  "S_G", 0.811),
         ;
 
         public final String name;
@@ -316,7 +317,7 @@ public class Autos {
                 fy
             );
         }).toList();
-        Collections.reverse(reversedSwerveSamples);
+        Collections.reverse(new LinkedList<>(reversedSwerveSamples));
 
         return new Trajectory<>(
             trajectory.name() + "Reversed",
