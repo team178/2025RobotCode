@@ -1,10 +1,11 @@
 package frc.robot;
 
-import com.revrobotics.spark.config.SparkMaxConfig;
 import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
+import com.revrobotics.spark.config.SparkMaxConfig;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -13,11 +14,11 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.Preferences;
+import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.Preferences;
-import edu.wpi.first.wpilibj.RobotBase;
 import frc.robot.util.ControlConstants;
 
 public class Constants {
@@ -356,10 +357,10 @@ public class Constants {
 
 	public static class FieldConstants {
 		public static final double fieldWidth = 17.548; // m
-		public static final double fieldHeight = 8.052; // m
+		public static final double fieldHeight = 8.042; // m - ANDYMARK FIELD NOT WELDED BC FIRST IS ANNOYING :)
 
-		public static final Translation2d reefCenterBlue = new Translation2d(4.485, 4.026);
-		public static final Translation2d reefCenterRed = new Translation2d(13.063, 4.026);
+		public static final Translation2d reefCenterBlue = new Translation2d(4.84505, fieldHeight / 2);
+		public static final Translation2d reefCenterRed = new Translation2d(13.058902, fieldHeight / 2);
 		public static final Translation2d fieldCenter = new Translation2d(fieldWidth / 2, fieldHeight / 2);
 		public static final Transform2d betweenReefsTransform = new Transform2d(reefCenterRed.minus(reefCenterBlue), Rotation2d.kZero);
 
