@@ -121,11 +121,32 @@ public class Autos {
             for(AutoPositions reefPosition : AutoPositions.values()) {
                 if(reefPosition.equals(AutoPositions.Y) || reefPosition.equals(AutoPositions.Z)) continue;
 
-                String trajectoryName = startingPosition.fileKey + reefPosition.name();
+                StartingPositions trajectoryStart = switch(startingPosition) {
+                    case OPPOSINGCAGELEFT -> StartingPositions.ALLYCAGERIGHT;
+                    case OPPOSINGCAGECENTER -> StartingPositions.ALLYCAGECENTER;
+                    case OPPOSINGCAGERIGHT -> StartingPositions.ALLYCAGELEFT;
+                    default -> startingPosition;
+                };
+
+                AutoPositions trajectoryEnd = !startingPosition.equals(StartingPositions.CENTER) ? reefPosition : switch(reefPosition) {
+                    case B -> AutoPositions.A;
+                    case C -> AutoPositions.L;
+                    case D -> AutoPositions.K;
+                    case E -> AutoPositions.J;
+                    case F -> AutoPositions.I;
+                    case G -> AutoPositions.H;
+                    default -> reefPosition;
+                };
+                
+                String trajectoryName = trajectoryStart.fileKey + trajectoryEnd.name();
                 Optional<Trajectory<SwerveSample>> trajectory = Choreo.loadTrajectory(trajectoryName);
 
                 if(trajectory.isPresent()) {
-                    blueTrajectories.put(trajectoryName, trajectory.get());
+                    if (!startingPosition.equals(trajectoryStart) || !reefPosition.equals(trajectoryEnd)) {
+                        blueTrajectories.put(startingPosition.fileKey + reefPosition.name(), getHorizontallyMirroredTrajectory(trajectory.get()));
+                    } else {
+                        blueTrajectories.put(trajectoryName, trajectory.get());
+                    }
                 } else {
                     System.out.println("Trajectory " + trajectoryName + " not found");
                 }
@@ -324,6 +345,36 @@ public class Autos {
             reversedSwerveSamples,
             List.of(0),
             List.of()
+        );
+    }
+
+    public static Trajectory<SwerveSample> getHorizontallyMirroredTrajectory(Trajectory<SwerveSample> topTrajectory) {
+        List<SwerveSample> horizontallyMirroredSwerveSamples = topTrajectory.samples().stream().map(sample -> {
+            double[] fx = Arrays.stream(sample.moduleForcesX()).map(force -> force).toArray();
+            double[] fy = Arrays.stream(sample.moduleForcesY()).map(force -> -force).toArray();
+
+            
+
+            return new SwerveSample(
+                sample.t,
+                sample.x,
+                Constants.FieldConstants.fieldHeight - sample.y,
+                -sample.heading,
+                sample.vx,
+                -sample.vy,
+                -sample.omega,
+                sample.ax,
+                -sample.ay,
+                -sample.alpha,
+                fx,
+                fy
+            );
+        }).toList();
+        return new Trajectory<>(
+            topTrajectory.name() + "HorizontallyMirrored",
+            horizontallyMirroredSwerveSamples,
+            topTrajectory.splits(),
+            topTrajectory.events()
         );
     }
 }
