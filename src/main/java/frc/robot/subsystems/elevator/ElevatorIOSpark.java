@@ -24,11 +24,13 @@ public class ElevatorIOSpark implements ElevatorIO {
     private SparkMax leftEffectorMotor;
     private SparkMax rightEffectorMotor;
     private SparkMax funnelMotor;
+    private SparkMax dealgaeMotor;
 
     private RelativeEncoder elevatorEncoder;
     private RelativeEncoder leftEffectorEncoder;
     private RelativeEncoder rightEffectorEncoder;
     private RelativeEncoder funnelEncoder;
+    private RelativeEncoder dealgaeEncoder;
 
     private SparkClosedLoopController elevatorController;
 
@@ -38,9 +40,11 @@ public class ElevatorIOSpark implements ElevatorIO {
     private DigitalInput lowerPhotosensor;
 
     private ElevatorPosition desiredPosition;
+    private double desiredHeight;
     private double leftEffectorDesiredVolts;
     private double rightEffectorDesiredVolts;
     private double funnelDesiredVolts;
+    private double dealgaeDesiredVolts;
 
     public ElevatorIOSpark() {
         elevatorLeaderMotor = new SparkMax(ElevatorConstants.kElevatorLeaderCANID, MotorType.kBrushless);
@@ -48,17 +52,20 @@ public class ElevatorIOSpark implements ElevatorIO {
         leftEffectorMotor = new SparkMax(ElevatorConstants.kLeftEffectorCANID, MotorType.kBrushless);
         rightEffectorMotor = new SparkMax(ElevatorConstants.kRightEffectorCANID, MotorType.kBrushless);
         funnelMotor = new SparkMax(ElevatorConstants.kFunnelMotorCANID, MotorType.kBrushless);
+        dealgaeMotor = new SparkMax(ElevatorConstants.kDealgaeMotorCANID, MotorType.kBrushless);
 
         elevatorLeaderMotor.setCANTimeout(0);
         elevatorFollowerMotor.setCANTimeout(0);
         leftEffectorMotor.setCANTimeout(0);
         rightEffectorMotor.setCANTimeout(0);
         funnelMotor.setCANTimeout(0);
+        dealgaeMotor.setCANTimeout(0);
 
         elevatorEncoder = elevatorLeaderMotor.getEncoder();
         leftEffectorEncoder = leftEffectorMotor.getEncoder();
         rightEffectorEncoder = rightEffectorMotor.getEncoder();
         funnelEncoder = funnelMotor.getEncoder();
+        dealgaeEncoder = dealgaeMotor.getEncoder();
 
         elevatorController = elevatorLeaderMotor.getClosedLoopController();
 
@@ -67,6 +74,7 @@ public class ElevatorIOSpark implements ElevatorIO {
         leftEffectorMotor.configure(ElevatorConstants.effectorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         rightEffectorMotor.configure(ElevatorConstants.effectorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         funnelMotor.configure(ElevatorConstants.effectorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        dealgaeMotor.configure(ElevatorConstants.effectorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
         highLimit = new DigitalInput(ElevatorConstants.kHighLimitDIO);
         lowLimit = new DigitalInput(ElevatorConstants.kLowLimitDIO);
@@ -74,22 +82,28 @@ public class ElevatorIOSpark implements ElevatorIO {
         lowerPhotosensor = new DigitalInput(ElevatorConstants.kLowerPhotosensorDIO);
 
         desiredPosition = ElevatorPosition.HOME;
+        desiredHeight = desiredPosition.height;
         leftEffectorDesiredVolts = 0;
         rightEffectorDesiredVolts = 0;
+        funnelDesiredVolts = 0;
+        dealgaeDesiredVolts = 0;
     }
 
     @Override
     public void updateInputs(ElevatorIOInputs inputs) {
         inputs.desiredPosition = desiredPosition;
+        inputs.desiredHeight = desiredHeight;
         inputs.leftEffectorDesiredVolts = leftEffectorDesiredVolts;
         inputs.rightEffectorDesiredVolts = rightEffectorDesiredVolts;
         inputs.funnelMotorDesiredVolts = funnelDesiredVolts;
+        inputs.dealgaeMotorDesiredVolts = dealgaeDesiredVolts;
 
         inputs.elevatorHeight = elevatorEncoder.getPosition();
         inputs.elevatorVelocity = elevatorEncoder.getVelocity();
         inputs.leftEffectorVelocity = leftEffectorEncoder.getVelocity();
         inputs.rightEffectorVelocity = rightEffectorEncoder.getVelocity();
         inputs.funnelMotorVelocity = funnelEncoder.getVelocity();
+        inputs.dealgaeMotorVelocity = dealgaeEncoder.getVelocity();
         
         inputs.elevatorAppliedVolts = elevatorLeaderMotor.getAppliedOutput() * elevatorLeaderMotor.getBusVoltage();
         inputs.elevatorCurrentAmps = elevatorLeaderMotor.getOutputCurrent();
@@ -99,6 +113,8 @@ public class ElevatorIOSpark implements ElevatorIO {
         inputs.rightEffectorCurrentAmps = rightEffectorMotor.getOutputCurrent();
         inputs.funnelMotorAppliedVolts = funnelMotor.getAppliedOutput() * funnelMotor.getBusVoltage();
         inputs.funnelMotorCurrentAmps = funnelMotor.getOutputCurrent();
+        inputs.dealgaeMotorAppliedVolts = dealgaeMotor.getAppliedOutput() * dealgaeMotor.getBusVoltage();
+        inputs.dealgaeMotorCurrentAmps = dealgaeMotor.getOutputCurrent();
 
         // get() is false when mag limit switch is in range, true when out of range or disconnected
         inputs.highLimit = !highLimit.get();
@@ -110,6 +126,7 @@ public class ElevatorIOSpark implements ElevatorIO {
     @Override
     public void setElevatorPosition(ElevatorPosition position) {
         desiredPosition = position;
+        desiredHeight = position.height;
         double ffVolts = ElevatorConstants.elevatorControlConstants.kG();
         elevatorController.setReference(
             position.height, ControlType.kPosition,
@@ -119,6 +136,16 @@ public class ElevatorIOSpark implements ElevatorIO {
         //     position.height, ControlType.kPosition,
         //     ClosedLoopSlot.kSlot0,
         //     ffVolts, ArbFFUnits.kVoltage);
+    }
+
+    @Override
+    public void setElevatorPosition(double position) {
+        desiredHeight = position;
+        double ffVolts = ElevatorConstants.elevatorControlConstants.kG();
+        elevatorController.setReference(
+            position, ControlType.kPosition,
+            (!lowLimit.get()) ? ClosedLoopSlot.kSlot1 : ((!highLimit.get()) ? ClosedLoopSlot.kSlot2 : ClosedLoopSlot.kSlot0),
+            ffVolts, ArbFFUnits.kVoltage);
     }
 
     @Override
@@ -148,6 +175,12 @@ public class ElevatorIOSpark implements ElevatorIO {
     public void setFunnelMotorVolts(double volts) {
         funnelDesiredVolts = volts;
         funnelMotor.setVoltage(volts);
+    }
+
+    @Override
+    public void setDealgaeMotorVolts(double volts) {
+        dealgaeDesiredVolts = volts;
+        dealgaeMotor.setVoltage(volts);
     }
 
     @Override

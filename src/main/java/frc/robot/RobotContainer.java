@@ -102,6 +102,8 @@ public class RobotContainer {
 
         driverController.y().onTrue(swerve.runZeroGyro());
         driverController.back().onTrue(swerve.runToggleToXPosition(true));
+        driverController.b().onTrue(swerve.runUpdateControlConstants().andThen(elevator.runUpdateControlConstants()));
+        driverController.start().onTrue(swerve.runSetTempPose());
         
         // if(Constants.simMode.equals(RobotMode.SIM)) {
         //     swerve.setDefaultCommand(swerve.runSimOdometryMoveBy(
@@ -115,18 +117,16 @@ public class RobotContainer {
         // driverController.a().onFalse(swerve.runStopDrive());
         // driverController.x().onTrue(swerve.runOpenTestDrive());
         // driverController.x().onFalse(swerve.runStopDrive());
-        driverController.b().onTrue(swerve.runUpdateControlConstants().andThen(elevator.runUpdateControlConstants()));
-        driverController.start().onTrue(swerve.runSetTempPose());
 
-        driverController.povUp().onTrue(elevator.runEffectorPreferences());
-        driverController.povUp().onFalse(elevator.runEffector(0, 0));
-        driverController.povDown().onTrue(elevator.runaEffectorPreferences());
-        driverController.povDown().onFalse(elevator.runEffector(0, 0));
+        // driverController.povUp().onTrue(elevator.runEffectorPreferences());
+        // driverController.povUp().onFalse(elevator.runEffector(0, 0));
+        // driverController.povDown().onTrue(elevator.runaEffectorPreferences());
+        // driverController.povDown().onFalse(elevator.runEffector(0, 0));
 
-        driverController.povLeft().onTrue(elevator.runElevatorOpenLoopPreferences());
-        driverController.povLeft().onFalse(elevator.runElevatorOpenLoop(0));
-        driverController.povRight().onTrue(elevator.runaElevatorOpenLoopPreferences());
-        driverController.povRight().onFalse(elevator.runElevatorOpenLoop(0));
+        // driverController.povLeft().onTrue(elevator.runElevatorOpenLoopPreferences());
+        // driverController.povLeft().onFalse(elevator.runElevatorOpenLoop(0));
+        // driverController.povRight().onTrue(elevator.runaElevatorOpenLoopPreferences());
+        // driverController.povRight().onFalse(elevator.runElevatorOpenLoop(0));
 
         // auxController.a().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.HOME));
         // auxController.b().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.INTAKE));
@@ -142,6 +142,11 @@ public class RobotContainer {
         auxController.leftTrigger().onFalse(elevator.runEffector(0, 0));
         auxController.rightBumper().onTrue(elevator.runSetFunnelVolts(-2));
         auxController.rightBumper().onFalse(elevator.runSetFunnelVolts(0));
+        auxController.leftStick().onTrue(elevator.runSetDealgaeVolts(8));
+        auxController.leftStick().onFalse(elevator.runSetDealgaeVolts(0));
+
+        auxController.povUp().whileTrue(elevator.runJogElevatorPosition(0.001));
+        auxController.povDown().whileTrue(elevator.runJogElevatorPosition(-0.001));
 
         // Combo testCombo = new Combo("test combo", 1,
         //     driverController.a(),

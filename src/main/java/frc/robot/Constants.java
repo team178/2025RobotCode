@@ -112,6 +112,16 @@ public class Constants {
 			0
 		);
 
+		public static final ControlConstants kPresetPosControlConstants = new ControlConstants(
+			"SwervePresetRot",
+			2,
+			0,
+			0,
+			0,
+			0,
+			0
+		);
+
 		static {
 			// Preferences.initDouble("kSwerveTestTurn", 0);
 			// Preferences.initDouble("kSwerveTestDrive", 0);
@@ -193,6 +203,7 @@ public class Constants {
 		public static final int kLeftEffectorCANID = 13;
 		public static final int kRightEffectorCANID = 14;
 		public static final int kFunnelMotorCANID = 15;
+		public static final int kDealgaeMotorCANID = 16;
 
 		public static final int kHighLimitDIO = 1;
 		public static final int kLowLimitDIO = 9;

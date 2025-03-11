@@ -44,6 +44,13 @@ public class Elevator extends SubsystemBase {
         });
     }
 
+    public Command runJogElevatorPosition(double bump) {
+        return run(() -> {
+            openLoop = false;
+            elevatorIO.setElevatorPosition(elevatorIOInputs.desiredHeight + bump);
+        });
+    }
+
     public Command runLeftVolts(double volts) {
         return runOnce(() -> elevatorIO.setLeftEffectorVolts(volts));
     }
@@ -68,6 +75,10 @@ public class Elevator extends SubsystemBase {
         return runOnce(() -> elevatorIO.setFunnelMotorVolts(volts));
     }
 
+    public Command runSetDealgaeVolts(double volts) {
+        return runOnce(() -> elevatorIO.setDealgaeMotorVolts(volts));
+    }
+
     public boolean getUpperPhotosensor() {
         return elevatorIOInputs.upperPhotosensor;
     }
@@ -90,7 +101,7 @@ public class Elevator extends SubsystemBase {
         } else if(elevatorIOInputs.highLimit) {
             elevatorIO.resetElevatorEncoder(0.61);
         }
-        if(!openLoop) elevatorIO.setElevatorPosition(elevatorIOInputs.desiredPosition);
+        if(!openLoop) elevatorIO.setElevatorPosition(elevatorIOInputs.desiredHeight);
     }
 
     /**
