@@ -5,7 +5,6 @@ import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
-import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -370,13 +369,13 @@ public class Constants {
 		public static final double fieldWidth = 17.548; // m
 		public static final double fieldHeight = 8.042; // m - ANDYMARK FIELD NOT WELDED BC FIRST IS ANNOYING :)
 
-		public static final Translation2d reefCenterBlue = new Translation2d(4.84505, fieldHeight / 2);
+		public static final Translation2d reefCenterBlue = new Translation2d(4.489323, fieldHeight / 2);
 		public static final Translation2d reefCenterRed = new Translation2d(13.058902, fieldHeight / 2);
 		public static final Translation2d fieldCenter = new Translation2d(fieldWidth / 2, fieldHeight / 2);
 		public static final Transform2d betweenReefsTransform = new Transform2d(reefCenterRed.minus(reefCenterBlue), Rotation2d.kZero);
 
-		public static final Pose2d blueCloseLeftReef = new Pose2d(3.23, 4.191, Rotation2d.kZero);
-	    public static final Pose2d blueCloseRightReef = new Pose2d(3.23, 3.861, Rotation2d.kZero);
+		public static final Pose2d blueCloseLeftReef = new Pose2d(3.2512, fieldHeight / 2 + 0.164338, Rotation2d.kZero);
+	    public static final Pose2d blueCloseRightReef = new Pose2d(3.2512, fieldHeight / 2 - 0.164338, Rotation2d.kZero);
 		public static final Pose2d redFarLeftReef = blueCloseLeftReef.plus(betweenReefsTransform);
 		public static final Pose2d redFarRightReef = blueCloseRightReef.plus(betweenReefsTransform);
 	}

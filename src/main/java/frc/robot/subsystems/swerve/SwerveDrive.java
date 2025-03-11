@@ -536,6 +536,10 @@ public class SwerveDrive extends SubsystemBase {
         ;
         Logger.recordOutput("Swerve/Zone", fieldZone);
         Logger.recordOutput("Swerve/TempZoneLeftReefPose", tempZoneViewerChooser.getSelected().leftReefPose);
+        Logger.recordOutput("Swerve/TempZoneLeftReefPoseX", tempZoneViewerChooser.getSelected().leftReefPose.getX());
+        Logger.recordOutput("Swerve/TempZoneLeftReefPoseY", tempZoneViewerChooser.getSelected().leftReefPose.getY());
         Logger.recordOutput("Swerve/TempZoneRightReefPose", tempZoneViewerChooser.getSelected().rightReefPose);
+        Logger.recordOutput("Swerve/TempZoneRightReefPoseX", tempZoneViewerChooser.getSelected().rightReefPose.getX());
+        Logger.recordOutput("Swerve/TempZoneRightReefPoseY", tempZoneViewerChooser.getSelected().rightReefPose.getY());
     }
 }
