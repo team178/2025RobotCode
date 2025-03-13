@@ -17,6 +17,7 @@ import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.GenericEntry;
+import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -38,7 +39,7 @@ public class Autos {
     private static GenericEntry autoStringFormEntry;
 
     private static final double preemptiveElevatorInterval = 0.2; // seconds before reaching target for raising elevator (currently no delay implemented before preemptive intake)
-    private static final double elevatorAllowMovementTolerance = 0.1; // meters above home tolerated before allowing movement
+    private static final double elevatorAllowMovementTolerance = 0.002; // meters above home tolerated before allowing movement
 
     // all trajectories should be: (S-AA through S-AL, with S-AX through S-GL, then AY through LZ)
     // 12 * 7 + 2 * 2 * 12
@@ -128,7 +129,7 @@ public class Autos {
                     default -> startingPosition;
                 };
 
-                AutoPositions trajectoryEnd = !startingPosition.equals(StartingPositions.CENTER) ? reefPosition : switch(reefPosition) {
+                AutoPositions trajectoryEnd = startingPosition.equals(StartingPositions.CENTER) ? switch(reefPosition) {
                     case B -> AutoPositions.A;
                     case C -> AutoPositions.L;
                     case D -> AutoPositions.K;
@@ -136,13 +137,28 @@ public class Autos {
                     case F -> AutoPositions.I;
                     case G -> AutoPositions.H;
                     default -> reefPosition;
-                };
+                } : ((startingPosition.equals(StartingPositions.OPPOSINGCAGELEFT) || startingPosition.equals(StartingPositions.OPPOSINGCAGECENTER) || startingPosition.equals(StartingPositions.OPPOSINGCAGERIGHT))
+                ? switch(reefPosition) {
+                    case A -> AutoPositions.B;
+                    case B -> AutoPositions.A;
+                    case C -> AutoPositions.L;
+                    case D -> AutoPositions.K;
+                    case E -> AutoPositions.J;
+                    case F -> AutoPositions.I;
+                    case G -> AutoPositions.H;
+                    case H -> AutoPositions.G;
+                    case I -> AutoPositions.F;
+                    case J -> AutoPositions.E;
+                    case K -> AutoPositions.D;
+                    case L -> AutoPositions.C;
+                    default -> reefPosition;
+                } : reefPosition);
                 
                 String trajectoryName = trajectoryStart.fileKey + trajectoryEnd.name();
                 Optional<Trajectory<SwerveSample>> trajectory = Choreo.loadTrajectory(trajectoryName);
 
                 if(trajectory.isPresent()) {
-                    if (!startingPosition.equals(trajectoryStart) || !reefPosition.equals(trajectoryEnd)) {
+                    if(!startingPosition.equals(trajectoryStart) || !reefPosition.equals(trajectoryEnd)) {
                         blueTrajectories.put(startingPosition.fileKey + reefPosition.name(), getHorizontallyMirroredTrajectory(trajectory.get()));
                     } else {
                         blueTrajectories.put(trajectoryName, trajectory.get());
@@ -158,25 +174,35 @@ public class Autos {
             if(reefPosition.equals(AutoPositions.Y) || reefPosition.equals(AutoPositions.Z)) continue;
             
             String trajectoryNameY = reefPosition.name() + "Y";
+            AutoPositions flippedEnd = switch(reefPosition) {
+                case A -> AutoPositions.B;
+                case B -> AutoPositions.A;
+                case C -> AutoPositions.L;
+                case D -> AutoPositions.K;
+                case E -> AutoPositions.J;
+                case F -> AutoPositions.I;
+                case G -> AutoPositions.H;
+                case H -> AutoPositions.G;
+                case I -> AutoPositions.F;
+                case J -> AutoPositions.E;
+                case K -> AutoPositions.D;
+                case L -> AutoPositions.C;
+                default -> reefPosition;
+            };
+            String trajectoryNameZ = flippedEnd.name() + "Z";
             Optional<Trajectory<SwerveSample>> trajectoryY = Choreo.loadTrajectory(trajectoryNameY);
             
             if(trajectoryY.isPresent()) {
                 blueTrajectories.put(trajectoryNameY, trajectoryY.get());
                 blueTrajectories.put("Y" + reefPosition.name(), getReversedTrajectory(trajectoryY.get()));
+                Trajectory<SwerveSample> trajectoryZ = getHorizontallyMirroredTrajectory(trajectoryY.get());
+                blueTrajectories.put(trajectoryNameZ, trajectoryZ);
+                blueTrajectories.put("Z" + flippedEnd.name(), getReversedTrajectory(trajectoryZ));
             } else {
-                System.out.println("Trajectory " + trajectoryNameY + " not found");
-            }
-
-            String trajectoryNameZ = reefPosition.name() + "Z";
-            Optional<Trajectory<SwerveSample>> trajectoryZ = Choreo.loadTrajectory(trajectoryNameZ);
-            
-            if(trajectoryZ.isPresent()) {
-                blueTrajectories.put(trajectoryNameZ, trajectoryZ.get());
-                blueTrajectories.put("Z" + reefPosition.name(), getReversedTrajectory(trajectoryZ.get()));
-            } else {
-                System.out.println("Trajectory " + trajectoryNameZ + " not found");
+                System.out.println("Trajectory " + trajectoryNameY + " not found, trajectory " + trajectoryNameZ + " was not generated");
             }
         }
+        System.out.println("Done loading trajectories");
     }
 
     /**
@@ -186,20 +212,30 @@ public class Autos {
      * @return SequenceCommandGroup representing autonomous generated based on Shuffleboard selections.
      */
     public static Command getAutoCommand(SwerveDrive swerve, Elevator elevator) {
-        Command resetPoseCommand = Commands.run(() -> swerve.setPose(new Pose2d(
+        StartingPositions startingPosition = Constants.isRed() ? switch(startingPositionChooser.getSelected()) {
+            case ALLYCAGELEFT -> StartingPositions.OPPOSINGCAGERIGHT;
+            case ALLYCAGECENTER -> StartingPositions.OPPOSINGCAGECENTER;
+            case ALLYCAGERIGHT -> StartingPositions.OPPOSINGCAGELEFT;
+            case CENTER -> StartingPositions.CENTER;
+            case OPPOSINGCAGELEFT -> StartingPositions.ALLYCAGERIGHT;
+            case OPPOSINGCAGECENTER -> StartingPositions.ALLYCAGECENTER;
+            case OPPOSINGCAGERIGHT -> StartingPositions.ALLYCAGELEFT;
+        } : startingPositionChooser.getSelected();
+        Command resetPoseCommand = Commands.runOnce(() -> swerve.setPose(new Pose2d(
             Constants.isRed() ? StartingPositions.redX : StartingPositions.blueX,
-            startingPositionChooser.getSelected().y,
+            startingPosition.y,
             Constants.isRed() ? Rotation2d.kZero : Rotation2d.k180deg)
         ), swerve);
 
         String rawAutoString = autoStringFormEntry.getString("");
+        System.out.println("Trying to load auto string \"" + rawAutoString + "\"");
         if(rawAutoString.length() == 0) {
             return resetPoseCommand;
         }
 
         Trajectory<SwerveSample> startingTrajectory = blueTrajectories.get(startingPositionChooser.getSelected().fileKey + rawAutoString.substring(0, 1));
         if(startingTrajectory == null) return resetPoseCommand.andThen(Commands.print("Starting trajectory not found"));
-        Command autoCommand = new FollowTrajectory(swerve, Constants.isRed() ? getRedTrajectory(startingTrajectory) : startingTrajectory);
+        Command autoCommand = new FollowTrajectory(swerve, startingTrajectory);
         String previousPosition = rawAutoString.substring(0, 1);
 
         for(int i = 1; i < rawAutoString.length(); i++) {
@@ -240,10 +276,13 @@ public class Autos {
                 case "J":
                 case "K":
                 case "L":
+                case "Y":
+                case "Z":
                     Trajectory<SwerveSample> trajectory = blueTrajectories.get(previousPosition + character);
+                    System.out.println(previousPosition + character + " load");
                     if(trajectory == null) return resetPoseCommand.andThen(Commands.print("Trajectory not found going to index " + i + ", trajectory " + previousPosition + character));
-                    Command followTrajectory = new FollowTrajectory(swerve, Constants.isRed() ? getRedTrajectory(trajectory) : trajectory);
-                    String next = i < rawAutoString.length() + 1 ? rawAutoString.substring(i + 1, i + 2) : "";
+                    Command followTrajectory = new FollowTrajectory(swerve, trajectory);
+                    String next = i + 1 < rawAutoString.length() ? rawAutoString.substring(i + 1, i + 2) : "";
                     switch(next) {
                         case "0": // no delay with preemptive intake
                             autoCommand = autoCommand
@@ -284,7 +323,7 @@ public class Autos {
                     return resetPoseCommand.andThen(Commands.print("Invalid character in auto string: " + character));
             }
         }
-
+        
         return resetPoseCommand.andThen(autoCommand);
     }
 
@@ -320,9 +359,10 @@ public class Autos {
 
     public static Trajectory<SwerveSample> getReversedTrajectory(Trajectory<SwerveSample> trajectory) {
         double trajectoryDuration = trajectory.getFinalSample(false).isPresent() ? trajectory.getFinalSample(false).get().t : 0;
-        List<SwerveSample> reversedSwerveSamples = trajectory.samples().stream().map(sample -> {
+        LinkedList<SwerveSample> reversedSwerveSamples = new LinkedList<>(trajectory.samples().stream().map(sample -> {
             double[] fx = Arrays.stream(sample.moduleForcesX()).map(force -> -force).toArray();
             double[] fy = Arrays.stream(sample.moduleForcesY()).map(force -> -force).toArray();
+            // System.out.println(trajectoryDuration - sample.t);
             return new SwerveSample(
                 trajectoryDuration - sample.t,
                 sample.x,
@@ -337,8 +377,8 @@ public class Autos {
                 fx,
                 fy
             );
-        }).toList();
-        Collections.reverse(new LinkedList<>(reversedSwerveSamples));
+        }).toList());
+        Collections.reverse(reversedSwerveSamples);
 
         return new Trajectory<>(
             trajectory.name() + "Reversed",
@@ -352,8 +392,6 @@ public class Autos {
         List<SwerveSample> horizontallyMirroredSwerveSamples = topTrajectory.samples().stream().map(sample -> {
             double[] fx = Arrays.stream(sample.moduleForcesX()).map(force -> force).toArray();
             double[] fy = Arrays.stream(sample.moduleForcesY()).map(force -> -force).toArray();
-
-            
 
             return new SwerveSample(
                 sample.t,

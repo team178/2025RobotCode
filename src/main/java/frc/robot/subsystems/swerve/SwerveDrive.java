@@ -78,6 +78,8 @@ public class SwerveDrive extends SubsystemBase {
     private BooleanSupplier goPosRightReef;
     private BooleanSupplier goPosProcessor;
 
+    private DoubleSupplier elevatorHeightSupplier;
+
     private double lastMove;
 
     private Field2d startingPositionVisualizer;
@@ -121,6 +123,7 @@ public class SwerveDrive extends SubsystemBase {
             SwerveConstants.kPresetPosControlConstants.kI(),
             SwerveConstants.kPresetPosControlConstants.kD()
         );
+        presetPosController.setTolerance(0.02);
 
         trajVXController = new PIDController(10, 0, 0);
         trajVYController = new PIDController(10, 0, 0);
@@ -139,7 +142,7 @@ public class SwerveDrive extends SubsystemBase {
         for(FieldZones zone : FieldZones.values()) {
             if(!zone.equals(FieldZones.OPPOSITE)) tempZoneViewerChooser.addOption(zone.name(), zone);
         }
-        Shuffleboard.getTab("Teleoperated").add(tempZoneViewerChooser).withWidget(BuiltInWidgets.kComboBoxChooser).withPosition(1, 1).withSize(1, 1);
+        Shuffleboard.getTab("Teleoperated").add(tempZoneViewerChooser).withWidget(BuiltInWidgets.kComboBoxChooser).withPosition(1, 0).withSize(2, 1);
     }
 
     public void setToAimSuppliers(BooleanSupplier goAimReef, BooleanSupplier goAimProcessor, BooleanSupplier goAimStation) {
@@ -152,6 +155,10 @@ public class SwerveDrive extends SubsystemBase {
         this.goPosLeftReef = goPosLeftReef;
         this.goPosRightReef = goPosRightReef;
         this.goPosProcessor = goPosProcessor;
+    }
+
+    public void setElevatorHeightSupplier(DoubleSupplier elevatorHeightSupplier) {
+        this.elevatorHeightSupplier = elevatorHeightSupplier;
     }
 
     private double adjustAxisInput(double controllerInput, double deadband, double minThreshold, double steepness) {
@@ -210,7 +217,7 @@ public class SwerveDrive extends SubsystemBase {
         double steepness = 1.8; // power to raise input (which is on interval [-1, 1], so reduces lower values)
         mag = adjustAxisInput(mag, deadband, minThreshold, steepness);
         mag *= SwerveConstants.kMagVelLimit * speedFactor * elevatorSpeedFactor;
-        omega = adjustAxisInput(omega, deadband, minThreshold, steepness);
+        omega = adjustAxisInput(omega, deadband, minThreshold, steepness + 1);
         omega *= SwerveConstants.kRotVelLimit;
 
         ChassisSpeeds chassisSpeeds = new ChassisSpeeds(mag * Math.cos(dir), mag * Math.sin(dir), omega);
@@ -353,10 +360,10 @@ public class SwerveDrive extends SubsystemBase {
         ChassisSpeeds speeds = new ChassisSpeeds(
             sample.vx + trajVXController.calculate(pose.getX(), sample.x),
             sample.vy + trajVYController.calculate(pose.getY(), sample.y),
-            sample.omega + trajHeadingController.calculate(pose.getRotation().getRadians(), sample.heading)
+            sample.omega + trajHeadingController.calculate(pose.getRotation().getRadians(), sample.heading) // TODO double check heading range
         );
 
-        runChassisSpeeds(speeds, true, true);
+        runChassisSpeeds(speeds, true, true, true);
     }
 
     public void setPose(Pose2d pose) {
@@ -534,6 +541,11 @@ public class SwerveDrive extends SubsystemBase {
                     .getAngle()
             )
         ;
+
+        if(elevatorHeightSupplier != null) {
+            elevatorSpeedFactor = Math.max((0.2 - elevatorHeightSupplier.getAsDouble()), 0) * 4.5 + 0.1;
+        }
+
         Logger.recordOutput("Swerve/Zone", fieldZone);
         Logger.recordOutput("Swerve/TempZoneLeftReefPose", tempZoneViewerChooser.getSelected().leftReefPose);
         Logger.recordOutput("Swerve/TempZoneLeftReefPoseX", tempZoneViewerChooser.getSelected().leftReefPose.getX());

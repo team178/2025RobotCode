@@ -119,8 +119,8 @@ public class ElevatorIOSpark implements ElevatorIO {
         // get() is false when mag limit switch is in range, true when out of range or disconnected
         inputs.highLimit = !highLimit.get();
         inputs.lowLimit = !lowLimit.get();
-        inputs.upperPhotosensor = upperPhotosensor.get();
-        inputs.lowerPhotosensor = lowerPhotosensor.get();
+        inputs.upperPhotosensor = !upperPhotosensor.get();
+        inputs.lowerPhotosensor = !lowerPhotosensor.get();
     }
 
     @Override

@@ -94,6 +94,7 @@ public class RobotContainer {
             driverController.povRight()::getAsBoolean, // right reef
             driverController.povDown()::getAsBoolean // processor
         );
+        swerve.setElevatorHeightSupplier(elevator::getElevatorHeight);
         swerve.setDefaultCommand(swerve.runDriveInputs(
             driverController::getLeftX, // vx
             driverController::getLeftY, // vy
@@ -139,14 +140,16 @@ public class RobotContainer {
         auxController.a().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L1));
         auxController.x().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L2));
         auxController.y().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L3));
-        auxController.leftBumper().onTrue(elevator.runEffector(-4, 4));
-        auxController.leftBumper().onFalse(elevator.runEffector(0, 0));
+        auxController.leftBumper().onTrue(elevator.runIntakeEffector(-4, 4));
+        auxController.leftBumper().onFalse(elevator.runStopIntakeEffector());
         auxController.leftTrigger().onTrue(elevator.runEffector(-6, 3));
         auxController.leftTrigger().onFalse(elevator.runEffector(0, 0));
-        auxController.rightBumper().onTrue(elevator.runSetFunnelVolts(-2));
+        auxController.rightBumper().onTrue(elevator.runIntakeFunnel(-2));
         auxController.rightBumper().onFalse(elevator.runSetFunnelVolts(0));
-        auxController.leftStick().onTrue(elevator.runSetDealgaeVolts(8));
+        auxController.leftStick().onTrue(elevator.runSetDealgaeVolts(5));
         auxController.leftStick().onFalse(elevator.runSetDealgaeVolts(0));
+        auxController.rightStick().onTrue(elevator.runSetDealgaeVolts(-8));
+        auxController.rightStick().onFalse(elevator.runSetDealgaeVolts(0));
 
         auxController.povUp().whileTrue(elevator.runJogElevatorPosition(0.001));
         auxController.povDown().whileTrue(elevator.runJogElevatorPosition(-0.001));

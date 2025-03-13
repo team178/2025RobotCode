@@ -77,8 +77,8 @@ public class VisionIOLimelight implements VisionIO {
         TimestampedDoubleArray lastRawMT2Data = dataMT2Subscriber.getAtomic();
         inputs.lastTimestampMT1 = lastRawMT1Data.timestamp;
         inputs.lastTimestampMT2 = lastRawMT2Data.timestamp;
-        if(lastRawMT1Data.value.length >= 11) inputs.lastPoseObservationMT1 = parsePosition(lastRawMT1Data.value, lastRawMT1Data.timestamp * 1e-6, false);
-        if(lastRawMT2Data.value.length >= 11) inputs.lastPoseObservationMT2 = parsePosition(lastRawMT2Data.value, lastRawMT2Data.timestamp * 1e-6, true);
+        if(lastRawMT1Data.value.length > 11) inputs.lastPoseObservationMT1 = parsePosition(lastRawMT1Data.value, lastRawMT1Data.timestamp * 1e-6, false);
+        if(lastRawMT2Data.value.length > 11) inputs.lastPoseObservationMT2 = parsePosition(lastRawMT2Data.value, lastRawMT2Data.timestamp * 1e-6, true);
         if(lastRawMT1Data.value.length >= 11) {
             int tagCountMT1 = (int) lastRawMT1Data.value[7];
             double averageTagDistanceMT1 = lastRawMT1Data.value[9];

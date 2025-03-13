@@ -113,7 +113,7 @@ public class Constants {
 
 		public static final ControlConstants kPresetPosControlConstants = new ControlConstants(
 			"SwervePresetRot",
-			2,
+			1.5,
 			0,
 			0,
 			0,
@@ -135,10 +135,10 @@ public class Constants {
         public static final SparkMaxConfig turnConfig = new SparkMaxConfig();
         public static final SparkMaxConfig driveConfig = new SparkMaxConfig();
 
-		public static final Rotation2d FLZeroRotation = new Rotation2d(4.262);
-		public static final Rotation2d FRZeroRotation = new Rotation2d(5.503);
-		public static final Rotation2d BLZeroRotation = new Rotation2d(3.472);
-		public static final Rotation2d BRZeroRotation = new Rotation2d(4.451);
+		public static final Rotation2d FLZeroRotation = new Rotation2d(4.373);
+		public static final Rotation2d FRZeroRotation = new Rotation2d(5.662);
+		public static final Rotation2d BLZeroRotation = new Rotation2d(3.623);
+		public static final Rotation2d BRZeroRotation = new Rotation2d(4.553);
 
 		public static final ControlConstants turnControlConstants = new ControlConstants(
 			"swerveModule/turn",
@@ -182,6 +182,7 @@ public class Constants {
                 .idleMode(IdleMode.kBrake)
                 .smartCurrentLimit(30)
                 .voltageCompensation(12)
+				.closedLoopRampRate(0.01)
             ; driveConfig.closedLoop
                 .p(driveControlConstants.kP())
                 .i(driveControlConstants.kI())
@@ -206,8 +207,8 @@ public class Constants {
 
 		public static final int kHighLimitDIO = 1;
 		public static final int kLowLimitDIO = 9;
-		public static final int kUpperPhotosensorDIO = 2;
-		public static final int kLowerPhotosensorDIO = 7;
+		public static final int kUpperPhotosensorDIO = 0;
+		public static final int kLowerPhotosensorDIO = 2;
 
 		public static final double kSprocketPitchDiameter = Units.inchesToMeters(1.7567); // meters
 		public static final double kElevatorPositionConversionFactor = kSprocketPitchDiameter * Math.PI;

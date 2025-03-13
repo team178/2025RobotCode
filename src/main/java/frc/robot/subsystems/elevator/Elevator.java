@@ -1,9 +1,13 @@
 package frc.robot.subsystems.elevator;
 
+import java.util.function.BooleanSupplier;
+
 import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.wpilibj.Preferences;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
@@ -13,10 +17,13 @@ public class Elevator extends SubsystemBase {
     private ElevatorIOInputsAutoLogged elevatorIOInputs;
     private boolean openLoop;
 
+    private boolean intaking;
+
     public Elevator(ElevatorIO effectorIO) {
         this.elevatorIO = effectorIO;
         elevatorIOInputs = new ElevatorIOInputsAutoLogged();
         openLoop = false;
+        intaking = false;
         Preferences.initDouble("ele/leftvolts", 0);
         Preferences.initDouble("ele/rightvolts", 0);
         Preferences.initDouble("ele/elevatorvolts", 0);
@@ -87,6 +94,10 @@ public class Elevator extends SubsystemBase {
         return elevatorIOInputs.lowerPhotosensor;
     }
 
+    public double getElevatorHeight() {
+        return elevatorIOInputs.elevatorHeight;
+    }
+
     public Command runUpdateControlConstants() {
         return runOnce(() -> elevatorIO.updateControlConstants());
     }
@@ -99,9 +110,14 @@ public class Elevator extends SubsystemBase {
         if(elevatorIOInputs.lowLimit) {
             elevatorIO.resetElevatorEncoder(0);
         } else if(elevatorIOInputs.highLimit) {
-            elevatorIO.resetElevatorEncoder(0.61);
+            elevatorIO.resetElevatorEncoder(0.615);
         }
-        if(!openLoop) elevatorIO.setElevatorPosition(elevatorIOInputs.desiredHeight);
+        if(!openLoop) {
+            if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME)) {
+                elevatorIO.setElevatorPosition(ElevatorPosition.HOME.height + ((!getLowerPhotosensor() || !getUpperPhotosensor()) && false ? (0.0025 * Math.sin(Timer.getFPGATimestamp() * 12)) : 0));
+            } else elevatorIO.setElevatorPosition(elevatorIOInputs.desiredHeight);
+            // elevatorIO.setElevatorPosition(elevatorIOInputs.desiredPosition);
+        }
     }
 
     /**
@@ -136,9 +152,38 @@ public class Elevator extends SubsystemBase {
         return runToElevatorPosition(ElevatorPosition.HOME)
             .andThen(runSetFunnelVolts(-2))
             .andThen(runEffector(-4, 4))
-            .andThen(new WaitUntilCommand(this::getUpperPhotosensor)) // TODO check
+            .andThen(new WaitUntilCommand(() -> getLowerPhotosensor() && getUpperPhotosensor())) // TODO check
             .andThen(new WaitCommand(0.1))
             .andThen(runEffector(0, 0))
             .andThen(runSetFunnelVolts(0));
     }
-}
+
+    public Command runIntakeEffector(double left, double right) {
+        return runOnce(() -> {
+            if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) && intaking) {
+                intaking = false;
+                elevatorIO.setEffectorVolts(0, 0);
+            } else {
+                if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME)) intaking = true;
+                else intaking = false;
+                elevatorIO.setEffectorVolts(left, right);
+            }
+        })
+            .andThen(new WaitUntilCommand(() -> getLowerPhotosensor() && elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME)))
+            .andThen(new WaitCommand(0.03))
+            .andThen(runEffector(0, 0));
+    }
+
+    public Command runStopIntakeEffector() {
+        return runOnce(() -> {
+            if(!intaking) elevatorIO.setEffectorVolts(0, 0);
+        });
+    }
+
+    public Command runIntakeFunnel(double volts) {
+        return runSetFunnelVolts(volts)
+            .andThen(new WaitUntilCommand(() -> getLowerPhotosensor() && elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME)))
+            .andThen(new WaitCommand(0.03))
+            .andThen(runEffector(0, 0));
+    }
+ }
