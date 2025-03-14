@@ -6,8 +6,9 @@ import org.littletonrobotics.junction.Logger;
 
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
@@ -27,6 +28,26 @@ public class Elevator extends SubsystemBase {
         Preferences.initDouble("ele/leftvolts", 0);
         Preferences.initDouble("ele/rightvolts", 0);
         Preferences.initDouble("ele/elevatorvolts", 0);
+
+        ShuffleboardTab teleopTab = Shuffleboard.getTab("Teleoperated");
+        teleopTab.addBoolean("Lower Photosensor", () -> elevatorIOInputs.lowerPhotosensor)
+            .withPosition(2, 1)
+            .withSize(2, 1);
+        teleopTab.addBoolean("Upper Photosensor", () -> elevatorIOInputs.upperPhotosensor)
+            .withPosition(2, 0)
+            .withSize(2, 1);
+        teleopTab.addBoolean("Low Limit", () -> elevatorIOInputs.lowLimit)
+            .withPosition(4, 1)
+            .withSize(1, 1);
+        teleopTab.addBoolean("High Limit", () -> elevatorIOInputs.highLimit)
+            .withPosition(4, 0)
+            .withSize(1, 1);
+        teleopTab.addString("Elevator Position", () -> elevatorIOInputs.desiredPosition.name)
+            .withPosition(0, 2)
+            .withSize(2, 1);
+        teleopTab.addBoolean("\"Intaking\"", () -> intaking)
+            .withPosition(3, 2)
+            .withSize(1, 1);
     }
 
     public Command runElevatorOpenLoop(double volts) {
@@ -47,6 +68,11 @@ public class Elevator extends SubsystemBase {
     public Command runToElevatorPosition(ElevatorPosition position) {
         return runOnce(() -> {
             openLoop = false;
+            if(intaking) {
+                elevatorIO.setEffectorVolts(0, 0);
+                elevatorIO.setFunnelMotorVolts(0);
+                intaking = false;
+            }
             elevatorIO.setElevatorPosition(position);
         });
     }
@@ -94,6 +120,10 @@ public class Elevator extends SubsystemBase {
         return elevatorIOInputs.lowerPhotosensor;
     }
 
+    public boolean hasCoral() {
+        return getLowerPhotosensor() && getUpperPhotosensor();
+    }
+
     public double getElevatorHeight() {
         return elevatorIOInputs.elevatorHeight;
     }
@@ -110,11 +140,11 @@ public class Elevator extends SubsystemBase {
         if(elevatorIOInputs.lowLimit) {
             elevatorIO.resetElevatorEncoder(0);
         } else if(elevatorIOInputs.highLimit) {
-            elevatorIO.resetElevatorEncoder(0.615);
+            elevatorIO.resetElevatorEncoder(0.612);
         }
         if(!openLoop) {
             if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME)) {
-                elevatorIO.setElevatorPosition(ElevatorPosition.HOME.height + ((!getLowerPhotosensor() || !getUpperPhotosensor()) && false ? (0.0025 * Math.sin(Timer.getFPGATimestamp() * 12)) : 0));
+                elevatorIO.setElevatorPosition(ElevatorPosition.HOME.height + (!hasCoral() ? (0.003 * Math.sin(Timer.getFPGATimestamp() * 12)) : 0));
             } else elevatorIO.setElevatorPosition(elevatorIOInputs.desiredHeight);
             // elevatorIO.setElevatorPosition(elevatorIOInputs.desiredPosition);
         }
@@ -152,38 +182,50 @@ public class Elevator extends SubsystemBase {
         return runToElevatorPosition(ElevatorPosition.HOME)
             .andThen(runSetFunnelVolts(-2))
             .andThen(runEffector(-4, 4))
-            .andThen(new WaitUntilCommand(() -> getLowerPhotosensor() && getUpperPhotosensor())) // TODO check
+            .andThen(new WaitUntilCommand(this::hasCoral)) // TODO check
             .andThen(new WaitCommand(0.1))
             .andThen(runEffector(0, 0))
             .andThen(runSetFunnelVolts(0));
     }
 
-    public Command runIntakeEffector(double left, double right) {
+    public Command runIntakeEffector(double effectorVolts, double funnelVolts, BooleanSupplier isAlignedSupplier) {
         return runOnce(() -> {
             if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) && intaking) {
                 intaking = false;
                 elevatorIO.setEffectorVolts(0, 0);
+                elevatorIO.setFunnelMotorVolts(0);
             } else {
-                if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME)) intaking = true;
-                else intaking = false;
-                elevatorIO.setEffectorVolts(left, right);
+                if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME)) {
+                    intaking = true;
+                    elevatorIO.setFunnelMotorVolts(funnelVolts);
+                    elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
+                } else if(isAlignedSupplier.getAsBoolean()) {
+                    if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1)) {
+                        elevatorIO.setEffectorVolts(-effectorVolts * 6 / 4, effectorVolts * 3 / 4);
+                    } else {
+                        elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
+                    }
+                }
             }
-        })
-            .andThen(new WaitUntilCommand(() -> getLowerPhotosensor() && elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME)))
-            .andThen(new WaitCommand(0.03))
-            .andThen(runEffector(0, 0));
+        }).andThen(runWaitStopIntake());
     }
 
     public Command runStopIntakeEffector() {
         return runOnce(() -> {
             if(!intaking) elevatorIO.setEffectorVolts(0, 0);
-        });
+        }).andThen(runWaitStopIntake());
     }
 
     public Command runIntakeFunnel(double volts) {
         return runSetFunnelVolts(volts)
-            .andThen(new WaitUntilCommand(() -> getLowerPhotosensor() && elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME)))
-            .andThen(new WaitCommand(0.03))
-            .andThen(runEffector(0, 0));
+            .andThen(runWaitStopIntake());
+    }
+
+    public Command runWaitStopIntake() {
+        return new WaitUntilCommand(() -> hasCoral() && elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME))
+        .andThen(new WaitCommand(0.03))
+        .andThen(runEffector(0, 0)
+        .andThen(runSetFunnelVolts(0))
+        .andThen(runOnce(() -> intaking = false)));
     }
  }

@@ -21,6 +21,8 @@ import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
+import edu.wpi.first.wpilibj.shuffleboard.SimpleWidget;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
@@ -35,8 +37,9 @@ import frc.robot.subsystems.swerve.SwerveDrive;
  * Utility class for generating autonomous routines.
  */
 public class Autos {
-    private static final SendableChooser<StartingPositions> startingPositionChooser =  new SendableChooser<>();
+    public static final SendableChooser<StartingPositions> startingPositionChooser =  new SendableChooser<>();
     private static GenericEntry autoStringFormEntry;
+    public static final Field2d startingPositionVisualizerField = new Field2d();
 
     private static final double preemptiveElevatorInterval = 0.2; // seconds before reaching target for raising elevator (currently no delay implemented before preemptive intake)
     private static final double elevatorAllowMovementTolerance = 0.002; // meters above home tolerated before allowing movement
@@ -93,10 +96,10 @@ public class Autos {
 
     static {
         ShuffleboardTab tab = Shuffleboard.getTab("Autonomous ");
-        autoStringFormEntry = tab.add("Auto String", "")
-            .withPosition(0, 1)
-            .withSize(2, 1)
-            .getEntry();
+        SimpleWidget autoStringWidget = tab.add("Auto String", "")
+            .withPosition(7, 0)
+            .withSize(3, 1);
+        autoStringFormEntry = autoStringWidget.getEntry();
 
         for(StartingPositions position : StartingPositions.values()) {
             if(position.equals(StartingPositions.CENTER)) {
@@ -109,6 +112,12 @@ public class Autos {
             .withWidget(BuiltInWidgets.kSplitButtonChooser)
             .withPosition(0, 0)
             .withSize(7, 1);
+        tab.add("Starting Position Field", startingPositionVisualizerField)
+            .withPosition(0, 1)
+            .withSize(3, 2);
+        tab.add("Generate Path", Commands.print("test"))
+            .withPosition(0, 3)
+            .withSize(2, 1);
 
         loadTrajectories();
     }
@@ -205,13 +214,7 @@ public class Autos {
         System.out.println("Done loading trajectories");
     }
 
-    /**
-     * Selects correct trajectories using responses from Shuffleboard, generates Commands for each leg of auto, and combines them in a SequenceCommandGroup.
-     * @param swerve Robot's swerve drive subystem instance.
-     * @param elevator Robot's elevator subsystem instance.
-     * @return SequenceCommandGroup representing autonomous generated based on Shuffleboard selections.
-     */
-    public static Command getAutoCommand(SwerveDrive swerve, Elevator elevator) {
+    public static Pose2d getStartingPose() {
         StartingPositions startingPosition = Constants.isRed() ? switch(startingPositionChooser.getSelected()) {
             case ALLYCAGELEFT -> StartingPositions.OPPOSINGCAGERIGHT;
             case ALLYCAGECENTER -> StartingPositions.OPPOSINGCAGECENTER;
@@ -221,11 +224,21 @@ public class Autos {
             case OPPOSINGCAGECENTER -> StartingPositions.ALLYCAGECENTER;
             case OPPOSINGCAGERIGHT -> StartingPositions.ALLYCAGELEFT;
         } : startingPositionChooser.getSelected();
-        Command resetPoseCommand = Commands.runOnce(() -> swerve.setPose(new Pose2d(
+        return new Pose2d(
             Constants.isRed() ? StartingPositions.redX : StartingPositions.blueX,
             startingPosition.y,
-            Constants.isRed() ? Rotation2d.kZero : Rotation2d.k180deg)
-        ), swerve);
+            Constants.isRed() ? Rotation2d.kZero : Rotation2d.k180deg
+        );
+    }
+
+    /**
+     * Selects correct trajectories using responses from Shuffleboard, generates Commands for each leg of auto, and combines them in a SequenceCommandGroup.
+     * @param swerve Robot's swerve drive subystem instance.
+     * @param elevator Robot's elevator subsystem instance.
+     * @return SequenceCommandGroup representing autonomous generated based on Shuffleboard selections.
+     */
+    public static Command getAutoCommand(SwerveDrive swerve, Elevator elevator) {
+        Command resetPoseCommand = Commands.runOnce(() -> swerve.setPose(getStartingPose()), swerve);
 
         String rawAutoString = autoStringFormEntry.getString("");
         System.out.println("Trying to load auto string \"" + rawAutoString + "\"");

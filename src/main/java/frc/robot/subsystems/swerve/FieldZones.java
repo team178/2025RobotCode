@@ -79,7 +79,7 @@ public enum FieldZones {
     }
     
     private FieldZones(double degrees) {
-        this(degrees, FieldConstants.blueCloseLeftReef, FieldConstants.blueCloseRightReef);
+        this(degrees, new Pose2d(), new Pose2d());
     }
 
     private FieldZones(double degrees, Pose2d leftReefPose, Pose2d rightReefPose) {

@@ -11,6 +11,7 @@ import org.littletonrobotics.junction.networktables.NT4Publisher;
 import org.littletonrobotics.junction.wpilog.WPILOGReader;
 import org.littletonrobotics.junction.wpilog.WPILOGWriter;
 
+import edu.wpi.first.net.PortForwarder;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.PowerDistribution.ModuleType;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -19,7 +20,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 public class Robot extends LoggedRobot { // Use TimedRobot if not using AdvantageKit
     private Command m_autonomousCommand;
 
-    private final RobotContainer m_robotContainer;
+    private final RobotContainer robotContainer;
 
     public Robot() {
         Logger.recordMetadata("ProjectName", "MyProject"); // Set a metadata value
@@ -38,7 +39,19 @@ public class Robot extends LoggedRobot { // Use TimedRobot if not using Advantag
 
         Logger.start(); // Start logging! No more data receivers, replay sources, or metadata values may be added.
         
-        m_robotContainer = new RobotContainer();
+        robotContainer = new RobotContainer();
+        // TODO check port forwarding
+        for(int light = 0; light < 3; light++) {
+            String remoteHost = switch(light) {
+                case 0 -> "limelight-front.local";
+                case 1 -> "limelight-high.local";
+                case 2 -> "limelight-side.local";
+                default -> "limelight.local";
+            };
+            for(int port = 5800; port <= 5807; port++) {
+                PortForwarder.add(port, remoteHost, port + light * 10);
+            }
+        }
     }
 
     @Override
@@ -57,7 +70,7 @@ public class Robot extends LoggedRobot { // Use TimedRobot if not using Advantag
 
     @Override
     public void autonomousInit() {
-        m_autonomousCommand = m_robotContainer.getAutonomousCommand();
+        m_autonomousCommand = robotContainer.getAutonomousCommand();
 
         if (m_autonomousCommand != null) {
         m_autonomousCommand.schedule();

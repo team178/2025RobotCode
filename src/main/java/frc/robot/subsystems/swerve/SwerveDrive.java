@@ -12,8 +12,8 @@ import org.littletonrobotics.junction.Logger;
 
 import choreo.trajectory.SwerveSample;
 import edu.wpi.first.math.MathUtil;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -26,23 +26,24 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.Constants;
 import frc.robot.Constants.FieldConstants;
+import frc.robot.Constants.FieldType;
 import frc.robot.Constants.RobotMode;
 import frc.robot.Constants.SwerveConstants;
+import frc.robot.commands.Autos;
 
 public class SwerveDrive extends SubsystemBase {
     //! to be implementated later
@@ -74,16 +75,19 @@ public class SwerveDrive extends SubsystemBase {
     private BooleanSupplier goAimProcessor;
     private BooleanSupplier goAimStation;
     
-    private BooleanSupplier goPosLeftReef;
-    private BooleanSupplier goPosRightReef;
-    private BooleanSupplier goPosProcessor;
+    private PresetPositionType desiredPresetPosition;
+    private DoubleSupplier xReefChooser;
+    private DoubleSupplier yReefChooser;
 
     private DoubleSupplier elevatorHeightSupplier;
 
     private double lastMove;
+    private boolean isAligned;
 
     private Field2d startingPositionVisualizer;
     private Field2d autoTrajectoriesVisualizer;
+    private Field2d presetVisualizerField;
+    private Field2d odometryField;
 
     private SendableChooser<FieldZones> tempZoneViewerChooser;
 
@@ -131,6 +135,11 @@ public class SwerveDrive extends SubsystemBase {
         trajHeadingController.enableContinuousInput(0, 2 * Math.PI);
 
         lastMove = Timer.getFPGATimestamp();
+        isAligned = false;
+
+        fieldZone = FieldZones.BLUE_CLOSE;
+
+        desiredPresetPosition = PresetPositionType.NONE;
     }
 
     private void initAutoDashboards() {
@@ -142,7 +151,34 @@ public class SwerveDrive extends SubsystemBase {
         for(FieldZones zone : FieldZones.values()) {
             if(!zone.equals(FieldZones.OPPOSITE)) tempZoneViewerChooser.addOption(zone.name(), zone);
         }
-        Shuffleboard.getTab("Teleoperated").add(tempZoneViewerChooser).withWidget(BuiltInWidgets.kComboBoxChooser).withPosition(1, 0).withSize(2, 1);
+        // Shuffleboard.getTab("Teleoperated").add(tempZoneViewerChooser).withWidget(BuiltInWidgets.kComboBoxChooser).withPosition(1, 0).withSize(2, 1);
+
+        ShuffleboardTab teleopTab = Shuffleboard.getTab("Teleoperated");
+        teleopTab.addBoolean("toX", () -> toX)
+            .withPosition(2, 2)
+            .withSize(1, 1);
+        teleopTab.addString("Field Zone", () -> fieldZone.name())
+            .withPosition(0, 1)
+            .withSize(2, 1);
+        teleopTab.addString("Desired Preset Position", () -> desiredPresetPosition.name())
+            .withPosition(0, 3)
+            .withSize(2, 1);
+        teleopTab.addBoolean("Aligned", this::isAligned)
+            .withPosition(0, 4)
+            .withSize(2, 1);
+        
+        presetVisualizerField = new Field2d();
+        odometryField = new Field2d();
+
+        presetVisualizerField.setRobotPose(new Pose2d());
+        odometryField.setRobotPose(new Pose2d());
+
+        teleopTab.add("Desired Preset Pose", presetVisualizerField)
+            .withPosition(2, 3)
+            .withSize(3, 2);
+        teleopTab.add("Odometry Pose", odometryField)
+            .withPosition(5, 0)
+            .withSize(5, 3);
     }
 
     public void setToAimSuppliers(BooleanSupplier goAimReef, BooleanSupplier goAimProcessor, BooleanSupplier goAimStation) {
@@ -151,10 +187,9 @@ public class SwerveDrive extends SubsystemBase {
         this.goAimStation = goAimStation;
     }
 
-    public void setToPosSuppliers(BooleanSupplier goPosLeftReef, BooleanSupplier goPosRightReef, BooleanSupplier goPosProcessor) {
-        this.goPosLeftReef = goPosLeftReef;
-        this.goPosRightReef = goPosRightReef;
-        this.goPosProcessor = goPosProcessor;
+    public void setReefChooserSuppliers(DoubleSupplier xReefChooser, DoubleSupplier yReefChooser) {
+        this.xReefChooser = xReefChooser;
+        this.yReefChooser = yReefChooser;
     }
 
     public void setElevatorHeightSupplier(DoubleSupplier elevatorHeightSupplier) {
@@ -247,41 +282,47 @@ public class SwerveDrive extends SubsystemBase {
     }
 
     public void injectPresetPosition(ChassisSpeeds chassisSpeeds, boolean fieldRelative, boolean optimize) {
-        if(goPosLeftReef.getAsBoolean() || goPosRightReef.getAsBoolean()) {
-            if(fieldZone.equals(FieldZones.OPPOSITE)) {
+        ChassisSpeeds fieldRelativeSpeeds;
+        switch(desiredPresetPosition) {
+            case LEFTREEF:
+            case RIGHTREEF:
+                if(fieldZone.equals(FieldZones.OPPOSITE)) {
+                    runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
+                    return;
+                }
+                Pose2d desiredPose = desiredPresetPosition.equals(PresetPositionType.LEFTREEF) ? fieldZone.leftReefPose : fieldZone.rightReefPose;
+                Pose2d errorPose = new Pose2d(getPose().getX() - desiredPose.getX(), getPose().getY() - desiredPose.getY(), getPose().getRotation());
+                errorPose = errorPose.rotateAround(Translation2d.kZero, desiredPose.getRotation().unaryMinus());
+                Logger.recordOutput("Swerve/desiredPose", desiredPose);
+                Logger.recordOutput("Swerve/errorPose", errorPose);
+                double vyReefRelative = presetPosController.calculate(errorPose.getY(), 0) * elevatorSpeedFactor;
+                Logger.recordOutput("Swerve/vyReefRelative", vyReefRelative);
+                
+                fieldRelativeSpeeds = fieldRelative ? 
+                    (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
+                    ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
+                Logger.recordOutput("Swerve/fieldRelativeSpeedsNoFilter", fieldRelativeSpeeds);
+                ChassisSpeeds reefRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, fieldZone.rotation());
+                reefRelativeSpeeds.vyMetersPerSecond = vyReefRelative;
+                fieldRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(reefRelativeSpeeds, fieldZone.rotation());
+                Logger.recordOutput("Swerve/fieldRelativeSpeedsReef", fieldRelativeSpeeds);
+                runChassisSpeeds(fieldRelativeSpeeds, true, optimize, true);
+                break;
+            case PROCESSOR:
+                double vx = switch(Constants.kFieldType.getSelected()) {
+                    case ANDYMARK -> presetPosController.calculate(getPose().getX(), Constants.isRed() ? FieldConstants.fieldWidth - 6.27 : 6.27);
+                    case WELDED -> presetPosController.calculate(getPose().getX(), Constants.isRed() ? FieldConstants.fieldWidth - 6.18 : 6.18);
+                    default -> 0;
+                } * elevatorSpeedFactor;
+                fieldRelativeSpeeds = fieldRelative ? 
+                    (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
+                    ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
+                fieldRelativeSpeeds.vxMetersPerSecond = vx;
+                runChassisSpeeds(chassisSpeeds, true, optimize, true);
+                break;
+            default:
                 runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
-                return;
-            }
-            Pose2d desiredPose = goPosLeftReef.getAsBoolean() ? fieldZone.leftReefPose : fieldZone.rightReefPose;
-            Pose2d errorPose = new Pose2d(getPose().getX() - desiredPose.getX(), getPose().getY() - desiredPose.getY(), getPose().getRotation());
-            errorPose = errorPose.rotateAround(Translation2d.kZero, desiredPose.getRotation().unaryMinus());
-            Logger.recordOutput("Swerve/desiredPose", desiredPose);
-            Logger.recordOutput("Swerve/errorPose", errorPose);
-            double vyReefRelative = presetPosController.calculate(errorPose.getY(), 0);
-            Logger.recordOutput("Swerve/vyReefRelative", vyReefRelative);
-            
-            ChassisSpeeds fieldRelativeSpeeds = fieldRelative ? 
-                (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
-                ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
-            Logger.recordOutput("Swerve/fieldRelativeSpeedsNoFilter", fieldRelativeSpeeds);
-            ChassisSpeeds reefRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, fieldZone.rotation());
-            reefRelativeSpeeds.vyMetersPerSecond = vyReefRelative;
-            fieldRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(reefRelativeSpeeds, fieldZone.rotation());
-            Logger.recordOutput("Swerve/fieldRelativeSpeedsReef", fieldRelativeSpeeds);
-            runChassisSpeeds(fieldRelativeSpeeds, true, optimize, true);
-        } else if(goPosProcessor.getAsBoolean()) {
-            double vx = switch(Constants.kFieldType.getSelected()) {
-                case ANDYMARK -> presetPosController.calculate(getPose().getX(), Constants.isRed() ? FieldConstants.fieldWidth - 6.27 : 6.27);
-                case WELDED -> presetPosController.calculate(getPose().getX(), Constants.isRed() ? FieldConstants.fieldWidth - 6.18 : 6.18);
-                default -> 0;
-            };
-            ChassisSpeeds fieldRelativeSpeeds = fieldRelative ? 
-                (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
-                ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
-            fieldRelativeSpeeds.vxMetersPerSecond = vx;
-            runChassisSpeeds(chassisSpeeds, true, optimize, true);
-        } else {
-            runChassisSpeeds(chassisSpeeds, fieldRelative, optimize);
+                break;
         }
     }
 
@@ -456,9 +497,24 @@ public class SwerveDrive extends SubsystemBase {
         });
     }
 
+    public Command runTogglePresetPosition(PresetPositionType type) {
+        return runOnce(() -> {
+            if(desiredPresetPosition.equals(type)) {
+                desiredPresetPosition = PresetPositionType.NONE;
+            } else {
+                desiredPresetPosition = type;
+            }
+        });
+    }
+
     @AutoLogOutput(key = "Odometry/Pose")
     public Pose2d getPose() {
         return poseEstimator.getEstimatedPosition();
+    }
+
+    @AutoLogOutput(key = "Swerve/isAligned")
+    public boolean isAligned() {
+        return isAligned;
     }
 
     private ChassisSpeeds flipChassisSpeeds(ChassisSpeeds chassisSpeeds) {
@@ -503,6 +559,7 @@ public class SwerveDrive extends SubsystemBase {
             }
             Logger.recordOutput("Swerve/States/Setpoints", new SwerveModuleState[] {});
             Logger.recordOutput("Swerve/States/SetpointsOptimized", new SwerveModuleState[] {});
+            desiredPresetPosition = PresetPositionType.NONE;
         }
         
         // if using higher-frequency odometry, loop begin here
@@ -530,28 +587,116 @@ public class SwerveDrive extends SubsystemBase {
         poseEstimator.update(rawGyroRotation, updatedModulePositions);
         gyroDisconnectedAlert.set(!gyroIOInputs.connected && Constants.currentMode != RobotMode.SIM);
 
-        fieldZone =
-            (
-                poseEstimator.getEstimatedPosition().getX() - FieldConstants.fieldWidth / 2 // if positive, on red side
-            )
-                * (Constants.isRed() ? -1 : 1) > 0 ? FieldZones.OPPOSITE
-            : getZoneFromRotation(
-                poseEstimator.getEstimatedPosition().getTranslation().minus(
-                    Constants.isRed() ? FieldConstants.reefCenterRed : FieldConstants.reefCenterBlue)
-                    .getAngle()
-            )
-        ;
+        double xReef = xReefChooser.getAsDouble();
+        double yReef = -yReefChooser.getAsDouble();
+        if(Math.hypot(xReef, yReef) > 0.5 && goAimReef.getAsBoolean()) {
+            double angle = Math.atan2(yReef, xReef);
+            angle = Units.radiansToDegrees(angle);
+            if(Constants.isRed()) angle += 90;
+            else angle -= 90;
+            if(angle < 0) angle += 360;
+            if(angle > 360) angle -= 360;
+            // System.out.println(angle);
+            // System.out.println(getZoneFromRotation(Rotation2d.fromDegrees(angle)));
+            fieldZone = getZoneFromRotation(Rotation2d.fromDegrees(angle));
+        } else {
+            fieldZone =
+                (
+                    poseEstimator.getEstimatedPosition().getX() - FieldConstants.fieldWidth / 2 // if positive, on red side
+                )
+                    * (Constants.isRed() ? -1 : 1) > 0 ? FieldZones.OPPOSITE
+                : getZoneFromRotation(
+                    poseEstimator.getEstimatedPosition().getTranslation().minus(
+                        Constants.isRed() ? FieldConstants.reefCenterRed : FieldConstants.reefCenterBlue)
+                        .getAngle()
+                )
+            ;
+        }
 
         if(elevatorHeightSupplier != null) {
             elevatorSpeedFactor = Math.max((0.2 - elevatorHeightSupplier.getAsDouble()), 0) * 4.5 + 0.1;
         }
 
+        if(fieldZone.equals(FieldZones.OPPOSITE)) {
+            isAligned = false;
+        } else {
+            if(desiredPresetPosition.equals(PresetPositionType.LEFTREEF) || desiredPresetPosition.equals(PresetPositionType.RIGHTREEF)) {
+                Pose2d desiredPose = desiredPresetPosition.equals(PresetPositionType.LEFTREEF) ? fieldZone.leftReefPose : fieldZone.rightReefPose;
+                Pose2d errorPose = new Pose2d(getPose().getX() - desiredPose.getX(), getPose().getY() - desiredPose.getY(), getPose().getRotation());
+                if(Math.abs(errorPose.getX()) < 0.14 && Math.abs(errorPose.getY()) < 0.05) isAligned = true;
+                else isAligned = false;
+                Logger.recordOutput("Swerve/isAlignedErrorPose", errorPose);
+            } else {
+                Pose2d leftErrorPose = new Pose2d(getPose().getX() - fieldZone.leftReefPose.getX(), getPose().getY() - fieldZone.leftReefPose.getY(), getPose().getRotation());
+                Pose2d rightErrorPose = new Pose2d(getPose().getX() - fieldZone.rightReefPose.getX(), getPose().getY() - fieldZone.rightReefPose.getY(), getPose().getRotation());
+                if((Math.abs(leftErrorPose.getX()) < 0.14 && Math.abs(leftErrorPose.getY()) < 0.05)
+                || Math.abs(rightErrorPose.getX()) < 0.14 && Math.abs(rightErrorPose.getY()) < 0.05) isAligned = true;
+                else isAligned = false;
+                Logger.recordOutput("Swerve/isAlignedErrorPoseLeft", leftErrorPose);
+                Logger.recordOutput("Swerve/isAlignedErrorPoseRight", rightErrorPose);
+            }
+        }
+        Logger.recordOutput("Swerve/desiredPresetPosition", desiredPresetPosition);
+
+        Rotation2d presetRotation;
+        double presetX = FieldConstants.fieldWidth / 2;
+        double presetY = FieldConstants.fieldHeight / 2;
+        if(goAimReef.getAsBoolean()) {
+            presetRotation = fieldZone.rotation();
+        } else if(goAimProcessor.getAsBoolean()) {
+            presetRotation = Constants.isRed() ? Rotation2d.kCCW_90deg : Rotation2d.kCW_90deg;
+        } else if(goAimStation.getAsBoolean()) {
+            presetRotation = getPose().getY() > FieldConstants.fieldHeight / 2 ?
+                (Constants.isRed() ? Rotation2d.fromDegrees(144.011392 + 90) : Rotation2d.fromDegrees(360 - 144.011392 + 90)) :
+                (Constants.isRed() ? Rotation2d.fromDegrees(360 - 144.011392 - 90): Rotation2d.fromDegrees(144.011392 - 90));
+        } else {
+            presetRotation = new Rotation2d();
+            presetX = 0;
+            presetY = 0;
+        }
+        switch(desiredPresetPosition) {
+            case LEFTREEF:
+                presetX = fieldZone.leftReefPose.getX();
+                presetY = fieldZone.leftReefPose.getY();
+                break;
+            case RIGHTREEF:
+                presetX = fieldZone.rightReefPose.getX();
+                presetY = fieldZone.rightReefPose.getY();
+                break;
+            case PROCESSOR:
+                presetX = switch(Constants.kFieldType.getSelected()) {
+                    case ANDYMARK -> (Constants.isRed() ? FieldConstants.fieldWidth - 6.27 : 6.27);
+                    case WELDED -> (Constants.isRed() ? FieldConstants.fieldWidth - 6.18 : 6.18);
+                    default -> 0;
+                };
+                presetY = Constants.isRed() ? FieldConstants.fieldHeight - Units.inchesToMeters(16) : Units.inchesToMeters(16);
+            case CORALSTATION:
+                // TODO add
+            default:
+                break;
+        }
+        presetVisualizerField.setRobotPose(new Pose2d(presetX, presetY, presetRotation));
+        odometryField.setRobotPose(getPose());
+
+        if(DriverStation.isDisabled()) {
+            Autos.startingPositionVisualizerField.setRobotPose(Autos.getStartingPose());
+        }
+
         Logger.recordOutput("Swerve/Zone", fieldZone);
-        Logger.recordOutput("Swerve/TempZoneLeftReefPose", tempZoneViewerChooser.getSelected().leftReefPose);
-        Logger.recordOutput("Swerve/TempZoneLeftReefPoseX", tempZoneViewerChooser.getSelected().leftReefPose.getX());
-        Logger.recordOutput("Swerve/TempZoneLeftReefPoseY", tempZoneViewerChooser.getSelected().leftReefPose.getY());
-        Logger.recordOutput("Swerve/TempZoneRightReefPose", tempZoneViewerChooser.getSelected().rightReefPose);
-        Logger.recordOutput("Swerve/TempZoneRightReefPoseX", tempZoneViewerChooser.getSelected().rightReefPose.getX());
-        Logger.recordOutput("Swerve/TempZoneRightReefPoseY", tempZoneViewerChooser.getSelected().rightReefPose.getY());
+        // Logger.recordOutput("Swerve/TempZoneLeftReefPose", tempZoneViewerChooser.getSelected().leftReefPose);
+        // Logger.recordOutput("Swerve/TempZoneLeftReefPoseX", tempZoneViewerChooser.getSelected().leftReefPose.getX());
+        // Logger.recordOutput("Swerve/TempZoneLeftReefPoseY", tempZoneViewerChooser.getSelected().leftReefPose.getY());
+        // Logger.recordOutput("Swerve/TempZoneRightReefPose", tempZoneViewerChooser.getSelected().rightReefPose);
+        // Logger.recordOutput("Swerve/TempZoneRightReefPoseX", tempZoneViewerChooser.getSelected().rightReefPose.getX());
+        // Logger.recordOutput("Swerve/TempZoneRightReefPoseY", tempZoneViewerChooser.getSelected().rightReefPose.getY());
+    }
+
+    public enum PresetPositionType {
+        LEFTREEF,
+        RIGHTREEF,
+        PROCESSOR,
+        CORALSTATION,
+        NONE
+        ;
     }
 }

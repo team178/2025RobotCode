@@ -1,10 +1,10 @@
 package frc.robot.subsystems.elevator;
 
 public enum ElevatorPosition {
-    HOME("Home", 0.010),
+    HOME("Home", 0.011),
     L1("L1", 0.337),
-    L2("L2", 0.432),
-    L3("L3", 0.607),
+    L2("L2", 0.452),
+    L3("L3", 0.609),
     // L4("L4", 0.0),
     ;
 

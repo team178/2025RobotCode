@@ -13,6 +13,7 @@ public interface ElevatorIO {
         public double dealgaeMotorDesiredVolts = 0;
 
         public double elevatorHeight = 0;
+        public double elevatorFollowerHeight = 0;
         public double elevatorVelocity = 0;
         public double leftEffectorVelocity = 0;
         public double rightEffectorVelocity = 0;

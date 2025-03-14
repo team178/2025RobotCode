@@ -198,7 +198,7 @@ public class Constants {
 	}
 
 	public static class ElevatorConstants { // CAN ID range 11-19
-		public static final int kElevatorLeaderCANID = 11;
+		public static final int kElevatorLeaderCANID = 19;
 		public static final int kElevatorFollowerCANID = 12;
 		public static final int kLeftEffectorCANID = 13;
 		public static final int kRightEffectorCANID = 14;
@@ -212,13 +212,13 @@ public class Constants {
 
 		public static final double kSprocketPitchDiameter = Units.inchesToMeters(1.7567); // meters
 		public static final double kElevatorPositionConversionFactor = kSprocketPitchDiameter * Math.PI;
-		public static final double kElevatorPositionConversionFactorInternal = kSprocketPitchDiameter * Math.PI / 27;
+		public static final double kElevatorPositionConversionFactorInternal = kSprocketPitchDiameter * Math.PI / 20;
 
 		public static final ControlConstants elevatorControlConstants = new ControlConstants(
 			"elevator",
-			30, // to test
+			20, // to test
 			0,
-			0,
+			1,
 			0,
 			0.22,
 			0
@@ -236,7 +236,6 @@ public class Constants {
 				.inverted(true)
 				.closedLoopRampRate(0.1)
 			; elevatorLeaderConfig.closedLoop
-				// .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
 				.p(elevatorControlConstants.kP(), ClosedLoopSlot.kSlot0)
 				.i(elevatorControlConstants.kI(), ClosedLoopSlot.kSlot0)
 				.d(elevatorControlConstants.kD(), ClosedLoopSlot.kSlot0)
@@ -368,7 +367,7 @@ public class Constants {
 
 	public static class FieldConstants {
 		public static final double fieldWidth = 17.548; // m
-		public static final double fieldHeight = 8.042; // m - ANDYMARK FIELD NOT WELDED BC FIRST IS ANNOYING :)
+		public static final double fieldHeight = 8.042; // m - ANDYMARK FIELD NOT WELDED BC FIRST IS ANNOYING :) 8.052
 
 		public static final Translation2d reefCenterBlue = new Translation2d(4.489323, fieldHeight / 2);
 		public static final Translation2d reefCenterRed = new Translation2d(13.058902, fieldHeight / 2);
@@ -379,5 +378,10 @@ public class Constants {
 	    public static final Pose2d blueCloseRightReef = new Pose2d(3.2512, fieldHeight / 2 - 0.164338, Rotation2d.kZero);
 		public static final Pose2d redFarLeftReef = blueCloseLeftReef.plus(betweenReefsTransform);
 		public static final Pose2d redFarRightReef = blueCloseRightReef.plus(betweenReefsTransform);
+
+		public static final Pose2d blueCoralY = new Pose2d(1.59336668626, 7.44378938214, Rotation2d.fromDegrees(306));
+		public static final Pose2d blueCoralZ = new Pose2d(1.59336668626, fieldHeight - 7.44378938214, Rotation2d.fromDegrees(54));
+		public static final Pose2d redCoralY = blueCoralY.rotateAround(fieldCenter, Rotation2d.k180deg);
+		public static final Pose2d redCoralZ = blueCoralZ.rotateAround(fieldCenter, Rotation2d.k180deg);
 	}
 }

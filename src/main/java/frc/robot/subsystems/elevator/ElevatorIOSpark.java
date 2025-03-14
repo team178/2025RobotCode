@@ -27,6 +27,7 @@ public class ElevatorIOSpark implements ElevatorIO {
     private SparkMax dealgaeMotor;
 
     private RelativeEncoder elevatorEncoder;
+    private RelativeEncoder elevatorFollowEncoder;
     private RelativeEncoder leftEffectorEncoder;
     private RelativeEncoder rightEffectorEncoder;
     private RelativeEncoder funnelEncoder;
@@ -62,6 +63,7 @@ public class ElevatorIOSpark implements ElevatorIO {
         dealgaeMotor.setCANTimeout(0);
 
         elevatorEncoder = elevatorLeaderMotor.getEncoder();
+        elevatorFollowEncoder = elevatorFollowerMotor.getEncoder();
         leftEffectorEncoder = leftEffectorMotor.getEncoder();
         rightEffectorEncoder = rightEffectorMotor.getEncoder();
         funnelEncoder = funnelMotor.getEncoder();
@@ -99,6 +101,7 @@ public class ElevatorIOSpark implements ElevatorIO {
         inputs.dealgaeMotorDesiredVolts = dealgaeDesiredVolts;
 
         inputs.elevatorHeight = elevatorEncoder.getPosition();
+        inputs.elevatorFollowerHeight = elevatorFollowEncoder.getPosition();
         inputs.elevatorVelocity = elevatorEncoder.getVelocity();
         inputs.leftEffectorVelocity = leftEffectorEncoder.getVelocity();
         inputs.rightEffectorVelocity = rightEffectorEncoder.getVelocity();
