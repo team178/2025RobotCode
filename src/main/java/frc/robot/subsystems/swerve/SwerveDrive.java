@@ -31,6 +31,7 @@ import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.Timer;
+import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -131,7 +132,7 @@ public class SwerveDrive extends SubsystemBase {
 
         trajVXController = new PIDController(10, 0, 0);
         trajVYController = new PIDController(10, 0, 0);
-        trajHeadingController = new PIDController(5, 0, 0);
+        trajHeadingController = new PIDController(7, 0, 0);
         trajHeadingController.enableContinuousInput(0, 2 * Math.PI);
 
         lastMove = Timer.getFPGATimestamp();
@@ -151,11 +152,11 @@ public class SwerveDrive extends SubsystemBase {
         for(FieldZones zone : FieldZones.values()) {
             if(!zone.equals(FieldZones.OPPOSITE)) tempZoneViewerChooser.addOption(zone.name(), zone);
         }
-        // Shuffleboard.getTab("Teleoperated").add(tempZoneViewerChooser).withWidget(BuiltInWidgets.kComboBoxChooser).withPosition(1, 0).withSize(2, 1);
+        Shuffleboard.getTab("Teleoperated").add(tempZoneViewerChooser).withWidget(BuiltInWidgets.kComboBoxChooser).withPosition(7, 0).withSize(2, 1);
 
         ShuffleboardTab teleopTab = Shuffleboard.getTab("Teleoperated");
         teleopTab.addBoolean("toX", () -> toX)
-            .withPosition(2, 2)
+            .withPosition(2, 3)
             .withSize(1, 1);
         teleopTab.addString("Field Zone", () -> fieldZone.name())
             .withPosition(0, 1)
@@ -164,8 +165,8 @@ public class SwerveDrive extends SubsystemBase {
             .withPosition(0, 3)
             .withSize(2, 1);
         teleopTab.addBoolean("Aligned", this::isAligned)
-            .withPosition(0, 4)
-            .withSize(2, 1);
+            .withPosition(3, 3)
+            .withSize(1, 1);
         
         presetVisualizerField = new Field2d();
         odometryField = new Field2d();
@@ -174,11 +175,11 @@ public class SwerveDrive extends SubsystemBase {
         odometryField.setRobotPose(new Pose2d());
 
         teleopTab.add("Desired Preset Pose", presetVisualizerField)
-            .withPosition(2, 3)
+            .withPosition(4, 2)
             .withSize(3, 2);
         teleopTab.add("Odometry Pose", odometryField)
-            .withPosition(5, 0)
-            .withSize(5, 3);
+            .withPosition(4, 0)
+            .withSize(3, 2);
     }
 
     public void setToAimSuppliers(BooleanSupplier goAimReef, BooleanSupplier goAimProcessor, BooleanSupplier goAimStation) {
@@ -623,14 +624,14 @@ public class SwerveDrive extends SubsystemBase {
             if(desiredPresetPosition.equals(PresetPositionType.LEFTREEF) || desiredPresetPosition.equals(PresetPositionType.RIGHTREEF)) {
                 Pose2d desiredPose = desiredPresetPosition.equals(PresetPositionType.LEFTREEF) ? fieldZone.leftReefPose : fieldZone.rightReefPose;
                 Pose2d errorPose = new Pose2d(getPose().getX() - desiredPose.getX(), getPose().getY() - desiredPose.getY(), getPose().getRotation());
-                if(Math.abs(errorPose.getX()) < 0.14 && Math.abs(errorPose.getY()) < 0.05) isAligned = true;
+                if(Math.abs(errorPose.getX()) < 0.04 && Math.abs(errorPose.getY()) < 0.02) isAligned = true;
                 else isAligned = false;
                 Logger.recordOutput("Swerve/isAlignedErrorPose", errorPose);
             } else {
                 Pose2d leftErrorPose = new Pose2d(getPose().getX() - fieldZone.leftReefPose.getX(), getPose().getY() - fieldZone.leftReefPose.getY(), getPose().getRotation());
                 Pose2d rightErrorPose = new Pose2d(getPose().getX() - fieldZone.rightReefPose.getX(), getPose().getY() - fieldZone.rightReefPose.getY(), getPose().getRotation());
-                if((Math.abs(leftErrorPose.getX()) < 0.14 && Math.abs(leftErrorPose.getY()) < 0.05)
-                || Math.abs(rightErrorPose.getX()) < 0.14 && Math.abs(rightErrorPose.getY()) < 0.05) isAligned = true;
+                if((Math.abs(leftErrorPose.getX()) < 0.04 && Math.abs(leftErrorPose.getY()) < 0.02)
+                || Math.abs(rightErrorPose.getX()) < 0.04 && Math.abs(rightErrorPose.getY()) < 0.02) isAligned = true;
                 else isAligned = false;
                 Logger.recordOutput("Swerve/isAlignedErrorPoseLeft", leftErrorPose);
                 Logger.recordOutput("Swerve/isAlignedErrorPoseRight", rightErrorPose);
@@ -683,12 +684,12 @@ public class SwerveDrive extends SubsystemBase {
         }
 
         Logger.recordOutput("Swerve/Zone", fieldZone);
-        // Logger.recordOutput("Swerve/TempZoneLeftReefPose", tempZoneViewerChooser.getSelected().leftReefPose);
-        // Logger.recordOutput("Swerve/TempZoneLeftReefPoseX", tempZoneViewerChooser.getSelected().leftReefPose.getX());
-        // Logger.recordOutput("Swerve/TempZoneLeftReefPoseY", tempZoneViewerChooser.getSelected().leftReefPose.getY());
-        // Logger.recordOutput("Swerve/TempZoneRightReefPose", tempZoneViewerChooser.getSelected().rightReefPose);
-        // Logger.recordOutput("Swerve/TempZoneRightReefPoseX", tempZoneViewerChooser.getSelected().rightReefPose.getX());
-        // Logger.recordOutput("Swerve/TempZoneRightReefPoseY", tempZoneViewerChooser.getSelected().rightReefPose.getY());
+        Logger.recordOutput("Swerve/TempZoneLeftReefPose", tempZoneViewerChooser.getSelected().leftReefPose);
+        Logger.recordOutput("Swerve/TempZoneLeftReefPoseX", tempZoneViewerChooser.getSelected().leftReefPose.getX());
+        Logger.recordOutput("Swerve/TempZoneLeftReefPoseY", tempZoneViewerChooser.getSelected().leftReefPose.getY());
+        Logger.recordOutput("Swerve/TempZoneRightReefPose", tempZoneViewerChooser.getSelected().rightReefPose);
+        Logger.recordOutput("Swerve/TempZoneRightReefPoseX", tempZoneViewerChooser.getSelected().rightReefPose.getX());
+        Logger.recordOutput("Swerve/TempZoneRightReefPoseY", tempZoneViewerChooser.getSelected().rightReefPose.getY());
     }
 
     public enum PresetPositionType {

@@ -341,6 +341,9 @@ public class Constants {
 
 		public static final SparkMaxConfig climberConfig = new SparkMaxConfig();
 
+		public static final double kMinEncoderPosition = 0;
+		public static final double kMaxEncoderPosition = 10;
+
 		static {
 			climberConfig
 				.idleMode(IdleMode.kBrake)
@@ -352,10 +355,10 @@ public class Constants {
 
 	// TODO adjust
 	public static class VisionConstants {
-		public static final double linearStdDevBaseline = 8;
+		public static final double linearStdDevBaseline = 2;
 		public static final double angularStdDevBaseline = Double.POSITIVE_INFINITY;
 
-		public static final double linearStdDevMT2Factor = 0.1;
+		public static final double linearStdDevMT2Factor = 0.2;
 		public static final double angularStdDevMT2Factor = Double.POSITIVE_INFINITY;
 
 	}

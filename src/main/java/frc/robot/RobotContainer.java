@@ -12,6 +12,9 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.Autos;
 import frc.robot.Constants.RobotMode;
+import frc.robot.subsystems.climber.Climber;
+import frc.robot.subsystems.climber.ClimberIO;
+import frc.robot.subsystems.climber.ClimberIOSpark;
 import frc.robot.subsystems.elevator.Elevator;
 import frc.robot.subsystems.elevator.ElevatorIO;
 import frc.robot.subsystems.elevator.ElevatorIOSpark;
@@ -39,6 +42,7 @@ public class RobotContainer {
     private SwerveDrive swerve;
     private Elevator elevator;
     private Manipulator manipulator;
+    private Climber climber;
     private Vision vision;
 
     private Command autoCommand;
@@ -61,6 +65,7 @@ public class RobotContainer {
                 );
                 elevator = new Elevator(new ElevatorIOSpark());
                 // manipulator = new Manipulator(new ManipulatorIOSpark());
+                // climber = new Climber(new ClimberIOSpark());
                 vision = new Vision(
                     swerve::addVisionMeasurement
                     , new VisionIOLimelight(LimelightLocations.FRONT3, () -> swerve.getPose().getRotation())
@@ -77,6 +82,7 @@ public class RobotContainer {
                     new SDSModuleIO() {});
                 elevator = new Elevator(new ElevatorIO() {});
                 // manipulator = new Manipulator(new ManipulatorIO() {});
+                // climber = new Climber(new ClimberIO() {});
                 // vision = new Vision((pose, timestamp, stdDevs) -> {}, new VisionIO() {});
                 break;
         }
@@ -144,7 +150,7 @@ public class RobotContainer {
         alignedOverrideCombo.getTrigger().onTrue(Commands.run(() -> {}));
         Shuffleboard.getTab("Teleoperated")
             .addBoolean("Aligned Override", alignedOverrideCombo.getTrigger()).
-            withPosition(4, 2)
+            withPosition(3, 2)
             .withSize(1, 1);
 
         auxController.b().onTrue(elevator.runToElevatorPosition(ElevatorPosition.HOME));
@@ -174,6 +180,13 @@ public class RobotContainer {
         auxController.rightStick().onFalse(elevator.runSetDealgaeVolts(0));
         auxController.povUp().whileTrue(elevator.runJogElevatorPosition(0.001));
         auxController.povDown().whileTrue(elevator.runJogElevatorPosition(-0.001));
+
+        auxController.rightBumper().onTrue(elevator.runToggleBouncing());
+
+        // auxController.rightBumper().onTrue(climber.runSetClimberVolts(5));
+        // auxController.rightBumper().onFalse(climber.runSetClimberVolts(0));
+        // auxController.rightTrigger().onTrue(climber.runSetClimberVolts(-5));
+        // auxController.rightTrigger().onFalse(climber.runSetClimberVolts(0));
 
         // auxController.a().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.HOME));
         // auxController.b().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.INTAKE));

@@ -19,34 +19,36 @@ public class Elevator extends SubsystemBase {
     private boolean openLoop;
 
     private boolean intaking;
+    private boolean bouncing;
 
-    public Elevator(ElevatorIO effectorIO) {
-        this.elevatorIO = effectorIO;
+    public Elevator(ElevatorIO io) {
+        this.elevatorIO = io;
         elevatorIOInputs = new ElevatorIOInputsAutoLogged();
         openLoop = false;
         intaking = false;
+        bouncing = true;
         Preferences.initDouble("ele/leftvolts", 0);
         Preferences.initDouble("ele/rightvolts", 0);
         Preferences.initDouble("ele/elevatorvolts", 0);
 
         ShuffleboardTab teleopTab = Shuffleboard.getTab("Teleoperated");
-        teleopTab.addBoolean("Lower Photosensor", () -> elevatorIOInputs.lowerPhotosensor)
+        teleopTab.addBoolean("Low Photo", () -> elevatorIOInputs.lowerPhotosensor)
             .withPosition(2, 1)
-            .withSize(2, 1);
-        teleopTab.addBoolean("Upper Photosensor", () -> elevatorIOInputs.upperPhotosensor)
+            .withSize(1, 1);
+        teleopTab.addBoolean("Up Photo", () -> elevatorIOInputs.upperPhotosensor)
             .withPosition(2, 0)
-            .withSize(2, 1);
+            .withSize(1, 1);
         teleopTab.addBoolean("Low Limit", () -> elevatorIOInputs.lowLimit)
-            .withPosition(4, 1)
+            .withPosition(3, 1)
             .withSize(1, 1);
         teleopTab.addBoolean("High Limit", () -> elevatorIOInputs.highLimit)
-            .withPosition(4, 0)
+            .withPosition(3, 0)
             .withSize(1, 1);
         teleopTab.addString("Elevator Position", () -> elevatorIOInputs.desiredPosition.name)
             .withPosition(0, 2)
             .withSize(2, 1);
         teleopTab.addBoolean("\"Intaking\"", () -> intaking)
-            .withPosition(3, 2)
+            .withPosition(2, 2)
             .withSize(1, 1);
     }
 
@@ -132,6 +134,12 @@ public class Elevator extends SubsystemBase {
         return runOnce(() -> elevatorIO.updateControlConstants());
     }
 
+    public Command runToggleBouncing() {
+        return runOnce(() -> {
+            bouncing = !bouncing;
+        });
+    }
+
     @Override
     public void periodic() {
         elevatorIO.updateInputs(elevatorIOInputs);
@@ -143,8 +151,8 @@ public class Elevator extends SubsystemBase {
             elevatorIO.resetElevatorEncoder(0.612);
         }
         if(!openLoop) {
-            if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME)) {
-                elevatorIO.setElevatorPosition(ElevatorPosition.HOME.height + (!hasCoral() ? (0.003 * Math.sin(Timer.getFPGATimestamp() * 12)) : 0));
+            if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) && !hasCoral() && bouncing) {
+                elevatorIO.setElevatorPosition(ElevatorPosition.HOME.height + (0.003 * Math.sin(Timer.getFPGATimestamp() * 12)));
             } else elevatorIO.setElevatorPosition(elevatorIOInputs.desiredHeight);
             // elevatorIO.setElevatorPosition(elevatorIOInputs.desiredPosition);
         }
@@ -201,7 +209,7 @@ public class Elevator extends SubsystemBase {
                     elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
                 } else if(isAlignedSupplier.getAsBoolean()) {
                     if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1)) {
-                        elevatorIO.setEffectorVolts(-effectorVolts * 6 / 4, effectorVolts * 3 / 4);
+                        elevatorIO.setEffectorVolts(-effectorVolts * 6 / 7, effectorVolts * 3 / 7); // over 5 to over 7
                     } else {
                         elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
                     }

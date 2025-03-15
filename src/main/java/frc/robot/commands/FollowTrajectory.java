@@ -41,6 +41,6 @@ public class FollowTrajectory extends Command {
 
     @Override
     public boolean isFinished() {
-        return timer.get() > trajectory.getTotalTime();
+        return timer.get() > trajectory.getTotalTime() + 2;
     }
 }

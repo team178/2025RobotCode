@@ -1,7 +1,3 @@
-// Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
-// the WPILib BSD license file in the root directory of this project.
-
 package frc.robot.commands;
 
 import java.util.Arrays;
@@ -17,7 +13,6 @@ import choreo.trajectory.Trajectory;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.networktables.GenericEntry;
-import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
@@ -41,8 +36,8 @@ public class Autos {
     private static GenericEntry autoStringFormEntry;
     public static final Field2d startingPositionVisualizerField = new Field2d();
 
-    private static final double preemptiveElevatorInterval = 0.2; // seconds before reaching target for raising elevator (currently no delay implemented before preemptive intake)
-    private static final double elevatorAllowMovementTolerance = 0.002; // meters above home tolerated before allowing movement
+    private static final double preemptiveElevatorInterval = 0.2; // seconds before reaching target for raising elevator (currently no delay implemented before preemptive *intake*)
+    private static final double elevatorAllowMovementTolerance = 0.0015; // meters above home tolerated before allowing movement
 
     // all trajectories should be: (S-AA through S-AL, with S-AX through S-GL, then AY through LZ)
     // 12 * 7 + 2 * 2 * 12
