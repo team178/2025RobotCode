@@ -113,7 +113,7 @@ public class Constants {
 
 		public static final ControlConstants kPresetPosControlConstants = new ControlConstants(
 			"SwervePresetRot",
-			1.5,
+			2,
 			0,
 			0,
 			0,

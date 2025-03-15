@@ -128,7 +128,7 @@ public class SwerveDrive extends SubsystemBase {
             SwerveConstants.kPresetPosControlConstants.kI(),
             SwerveConstants.kPresetPosControlConstants.kD()
         );
-        presetPosController.setTolerance(0.02);
+        presetPosController.setTolerance(0.01);
 
         trajVXController = new PIDController(10, 0, 0);
         trajVYController = new PIDController(10, 0, 0);
