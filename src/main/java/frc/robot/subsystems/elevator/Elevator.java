@@ -50,6 +50,9 @@ public class Elevator extends SubsystemBase {
         teleopTab.addBoolean("\"Intaking\"", () -> intaking)
             .withPosition(2, 2)
             .withSize(1, 1);
+        teleopTab.addBoolean("Home Bounce", () -> bouncing)
+            .withPosition(7, 1)
+            .withSize(1, 1);
     }
 
     public Command runElevatorOpenLoop(double volts) {

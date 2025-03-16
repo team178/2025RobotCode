@@ -8,6 +8,8 @@ import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
 
+import edu.wpi.first.units.measure.Velocity;
+
 
 public class ClimberIOSpark implements ClimberIO {
     private SparkMax motor;
@@ -37,5 +39,9 @@ public class ClimberIOSpark implements ClimberIO {
     public void setClimberVolts(double volts) {
         desiredVolts = volts;
         motor.setVoltage(volts);
+    }
+
+    public void setClimberVelocity(Velocity velocity) {
+        // motor.
     }
 }

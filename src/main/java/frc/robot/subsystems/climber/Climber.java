@@ -12,6 +12,7 @@ public class Climber extends SubsystemBase {
 
     public Climber(ClimberIO io) {
         climberIO = io;
+        climberIOInputs = new ClimberIOInputsAutoLogged();
     }
 
     public Command runSetClimberVolts(double volts) {

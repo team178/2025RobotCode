@@ -65,7 +65,7 @@ public class RobotContainer {
                 );
                 elevator = new Elevator(new ElevatorIOSpark());
                 // manipulator = new Manipulator(new ManipulatorIOSpark());
-                // climber = new Climber(new ClimberIOSpark());
+                climber = new Climber(new ClimberIOSpark());
                 vision = new Vision(
                     swerve::addVisionMeasurement
                     , new VisionIOLimelight(LimelightLocations.FRONT3, () -> swerve.getPose().getRotation())
@@ -82,7 +82,7 @@ public class RobotContainer {
                     new SDSModuleIO() {});
                 elevator = new Elevator(new ElevatorIO() {});
                 // manipulator = new Manipulator(new ManipulatorIO() {});
-                // climber = new Climber(new ClimberIO() {});
+                climber = new Climber(new ClimberIO() {});
                 // vision = new Vision((pose, timestamp, stdDevs) -> {}, new VisionIO() {});
                 break;
         }
@@ -92,6 +92,18 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
+        Combo overrideElevatorFactorCombo = new Combo("overrideElevatorFactor Combo", 0.5,
+            driverController.x(),
+            driverController.x().negate(),
+            driverController.rightTrigger(0.75),
+            driverController.x()
+        );
+        overrideElevatorFactorCombo.getTrigger().onTrue(Commands.runOnce(() -> {}));
+        Shuffleboard.getTab("Teleoperated")
+            .addBoolean("EleFact Override", overrideElevatorFactorCombo.getTrigger()).
+            withPosition(8, 1)
+            .withSize(1, 1);
+
         swerve.setToAimSuppliers(
             driverController.leftTrigger()::getAsBoolean, // aim reef
             driverController.b()::getAsBoolean, // aim processor
@@ -101,7 +113,7 @@ public class RobotContainer {
             driverController::getRightX,
             driverController::getRightY
         );
-        swerve.setElevatorHeightSupplier(elevator::getElevatorHeight);
+        swerve.setElevatorSuppliers(elevator::getElevatorHeight, overrideElevatorFactorCombo.getTrigger());
         swerve.setDefaultCommand(swerve.runDriveInputs(
             driverController::getLeftX, // vx
             driverController::getLeftY, // vy
@@ -183,10 +195,10 @@ public class RobotContainer {
 
         auxController.rightBumper().onTrue(elevator.runToggleBouncing());
 
-        // auxController.rightBumper().onTrue(climber.runSetClimberVolts(5));
-        // auxController.rightBumper().onFalse(climber.runSetClimberVolts(0));
-        // auxController.rightTrigger().onTrue(climber.runSetClimberVolts(-5));
-        // auxController.rightTrigger().onFalse(climber.runSetClimberVolts(0));
+        auxController.rightBumper().onTrue(climber.runSetClimberVolts(10));
+        auxController.rightBumper().onFalse(climber.runSetClimberVolts(0));
+        auxController.rightTrigger().onTrue(climber.runSetClimberVolts(-10));
+        auxController.rightTrigger().onFalse(climber.runSetClimberVolts(0));
 
         // auxController.a().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.HOME));
         // auxController.b().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.INTAKE));
