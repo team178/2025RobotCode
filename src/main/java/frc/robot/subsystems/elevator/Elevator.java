@@ -51,7 +51,7 @@ public class Elevator extends SubsystemBase {
             .withPosition(2, 2)
             .withSize(1, 1);
         teleopTab.addBoolean("Home Bounce", () -> bouncing)
-            .withPosition(7, 1)
+            .withPosition(7, 0)
             .withSize(1, 1);
     }
 

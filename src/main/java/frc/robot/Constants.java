@@ -48,7 +48,7 @@ public class Constants {
 			.add("Field Type", kFieldType)
 			.withWidget(BuiltInWidgets.kComboBoxChooser)
 			.withSize(2, 1)
-			.withPosition(0, 0);
+			.withPosition(0, 3);
 	}
 
 	/** 
@@ -112,8 +112,8 @@ public class Constants {
 		);
 
 		public static final ControlConstants kPresetPosControlConstants = new ControlConstants(
-			"SwervePresetRot",
-			2,
+			"SwervePresetPos",
+			2.5,
 			0,
 			0,
 			0,

@@ -94,6 +94,7 @@ public class SwerveDrive extends SubsystemBase {
     private double errorX;
     private double errorY;
     private double errorHeading;
+    private boolean reefAimed;
 
     private SendableChooser<FieldZones> tempZoneViewerChooser;
 
@@ -150,6 +151,7 @@ public class SwerveDrive extends SubsystemBase {
         errorX = 10;
         errorY = 10;
         errorHeading = 1000;
+        reefAimed = false;
     }
 
     private void initAutoDashboards() {
@@ -161,7 +163,10 @@ public class SwerveDrive extends SubsystemBase {
         for(FieldZones zone : FieldZones.values()) {
             if(!zone.equals(FieldZones.OPPOSITE)) tempZoneViewerChooser.addOption(zone.name(), zone);
         }
-        Shuffleboard.getTab("Teleoperated").add(tempZoneViewerChooser).withWidget(BuiltInWidgets.kComboBoxChooser).withPosition(7, 0).withSize(2, 1);
+        Shuffleboard.getTab("Teleoperated").add(tempZoneViewerChooser)
+            .withWidget(BuiltInWidgets.kComboBoxChooser)
+            .withPosition(7, 3)
+            .withSize(2, 1);
 
         ShuffleboardTab teleopTab = Shuffleboard.getTab("Teleoperated");
         teleopTab.addBoolean("toX", () -> toX)
@@ -171,10 +176,20 @@ public class SwerveDrive extends SubsystemBase {
             .withPosition(0, 1)
             .withSize(2, 1);
         teleopTab.addString("Desired Preset Position", () -> desiredPresetPosition.name())
-            .withPosition(0, 3)
+            .withPosition(0, 0)
             .withSize(2, 1);
         teleopTab.addBoolean("Aligned", this::isAligned)
             .withPosition(3, 3)
+            .withSize(1, 1);
+        teleopTab.addNumber("xError", () -> errorX)
+            .withPosition(7, 1);
+        teleopTab.addNumber("yError", () -> errorY)
+            .withPosition(8, 1);
+        teleopTab.addNumber("headingError", () -> errorHeading)
+            .withPosition(7, 2)
+            .withSize(1, 1);
+        teleopTab.addBoolean("reefAimed", () -> reefAimed)
+            .withPosition(8, 2)
             .withSize(1, 1);
         
         presetVisualizerField = new Field2d();
@@ -306,7 +321,8 @@ public class SwerveDrive extends SubsystemBase {
                 errorPose = errorPose.rotateAround(Translation2d.kZero, desiredPose.getRotation().unaryMinus());
                 Logger.recordOutput("Swerve/desiredPose", desiredPose);
                 Logger.recordOutput("Swerve/errorPose", errorPose);
-                double vyReefRelative = presetPosController.calculate(errorPose.getY(), 0) * elevatorSpeedFactor;
+                double vyReefRelative = presetPosController.calculate(errorPose.getY(), 0);
+                if(vyReefRelative > 0.4) vyReefRelative *= elevatorSpeedFactor;
                 Logger.recordOutput("Swerve/vyReefRelative", vyReefRelative);
                 
                 fieldRelativeSpeeds = fieldRelative ? 
@@ -528,18 +544,6 @@ public class SwerveDrive extends SubsystemBase {
         return isAligned;
     }
 
-    public double getErrorX() {
-        return errorX;
-    }
-    
-    public double getErrorY() {
-        return errorY;
-    }
-    
-    public double getErrorHeading() {
-        return errorHeading;
-    }
-
     private ChassisSpeeds flipChassisSpeeds(ChassisSpeeds chassisSpeeds) {
         ChassisSpeeds flipped = chassisSpeeds;
         flipped.vxMetersPerSecond *= -1;
@@ -647,21 +651,27 @@ public class SwerveDrive extends SubsystemBase {
         if(fieldZone.equals(FieldZones.OPPOSITE)) {
             isAligned = false;
         } else {
+            Pose2d leftErrorPose = new Pose2d(getPose().getX() - fieldZone.leftReefPose.getX(), getPose().getY() - fieldZone.leftReefPose.getY(), getPose().getRotation().minus(fieldZone.leftReefPose.getRotation()));
+            Pose2d rightErrorPose = new Pose2d(getPose().getX() - fieldZone.rightReefPose.getX(), getPose().getY() - fieldZone.rightReefPose.getY(), getPose().getRotation().minus(fieldZone.rightReefPose.getRotation()));
             if(desiredPresetPosition.equals(PresetPositionType.LEFTREEF) || desiredPresetPosition.equals(PresetPositionType.RIGHTREEF)) {
                 Pose2d desiredPose = desiredPresetPosition.equals(PresetPositionType.LEFTREEF) ? fieldZone.leftReefPose : fieldZone.rightReefPose;
-                Pose2d errorPose = new Pose2d(getPose().getX() - desiredPose.getX(), getPose().getY() - desiredPose.getY(), getPose().getRotation());
+                Pose2d errorPose = new Pose2d(getPose().getX() - desiredPose.getX(), getPose().getY() - desiredPose.getY(), getPose().getRotation().minus(desiredPose.getRotation()));
                 if(Math.abs(errorPose.getX()) < 0.05 && Math.abs(errorPose.getY()) < 0.02) isAligned = true;
                 else isAligned = false;
                 Logger.recordOutput("Swerve/isAlignedErrorPose", errorPose);
                 errorX = errorPose.getX();
                 errorY = errorPose.getY();
                 errorHeading = errorPose.getRotation().getDegrees();
+                reefAimed = true;
+            } else {
+                if((Math.abs(leftErrorPose.getX()) < 0.04 && Math.abs(leftErrorPose.getY()) < 0.02)
+                || Math.abs(rightErrorPose.getX()) < 0.04 && Math.abs(rightErrorPose.getY()) < 0.02) isAligned = true;
+                else isAligned = false;
+                errorX = Math.min(leftErrorPose.getX(), rightErrorPose.getX());
+                errorY = Math.min(leftErrorPose.getY(), rightErrorPose.getY());
+                errorHeading = Math.min(leftErrorPose.getRotation().getDegrees(), rightErrorPose.getRotation().getDegrees());
+                reefAimed = false;
             }
-            Pose2d leftErrorPose = new Pose2d(getPose().getX() - fieldZone.leftReefPose.getX(), getPose().getY() - fieldZone.leftReefPose.getY(), getPose().getRotation());
-            Pose2d rightErrorPose = new Pose2d(getPose().getX() - fieldZone.rightReefPose.getX(), getPose().getY() - fieldZone.rightReefPose.getY(), getPose().getRotation());
-            if((Math.abs(leftErrorPose.getX()) < 0.04 && Math.abs(leftErrorPose.getY()) < 0.02)
-            || Math.abs(rightErrorPose.getX()) < 0.04 && Math.abs(rightErrorPose.getY()) < 0.02) isAligned = true;
-            else isAligned = false;
             Logger.recordOutput("Swerve/isAlignedErrorPoseLeft", leftErrorPose);
             Logger.recordOutput("Swerve/isAlignedErrorPoseRight", rightErrorPose);
         }
