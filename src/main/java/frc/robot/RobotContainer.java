@@ -64,19 +64,19 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
-        swerve.setDefaultCommand(swerve.runDriveInputs(
-            driverController::getLeftX,
-            driverController::getLeftY,
-            driverController::getRightX,
-            driverController.leftBumper()::getAsBoolean,
-            driverController.leftTrigger()::getAsBoolean
-        ));
+        // swerve.setDefaultCommand(swerve.runDriveInputs(
+        //     driverController::getLeftX,
+        //     driverController::getLeftY,
+        //     driverController::getRightX,
+        //     driverController.leftBumper()::getAsBoolean,
+        //     driverController.leftTrigger()::getAsBoolean
+        // ));
 
-        driverController.a().onTrue(swerve.runTestDrive());
-        driverController.a().onFalse(swerve.runStopDrive());
-        driverController.x().onTrue(swerve.runOpenTestDrive());
-        driverController.x().onFalse(swerve.runStopDrive());
-        driverController.b().onTrue(swerve.runUpdateControlConstants());
+        // driverController.a().onTrue(swerve.runTestDrive());
+        // driverController.a().onFalse(swerve.runStopDrive());
+        // driverController.x().onTrue(swerve.runOpenTestDrive());
+        // driverController.x().onFalse(swerve.runStopDrive());
+        // driverController.b().onTrue(swerve.runUpdateControlConstants());
 
         // climber.setDefaultCommand(climber.runClimber(
         //     auxController.b()::getAsBoolean,

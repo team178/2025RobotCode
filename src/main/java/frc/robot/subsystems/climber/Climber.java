@@ -2,6 +2,8 @@ package frc.robot.subsystems.climber;
 
 import java.util.function.BooleanSupplier;
 
+import org.littletonrobotics.junction.Logger;
+
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -10,12 +12,14 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class Climber extends SubsystemBase{
 
     private ClimberIO climber;
+    private ClimberIOInputsAutoLogged climberIOInputs;
 
     public Climber(ClimberIO climberIO) {
         Preferences.initDouble("volts",0);
         Preferences.initDouble("kG", 0);
         Preferences.initDouble("P",0.1);
         this.climber = climberIO;  
+        climberIOInputs = new ClimberIOInputsAutoLogged();
     }
 
     public Command runClimber(BooleanSupplier set, BooleanSupplier up, BooleanSupplier down, BooleanSupplier key) {
@@ -51,7 +55,8 @@ public class Climber extends SubsystemBase{
     @Override
     public void periodic() {
         climber.update();
-        SmartDashboard.putNumber("encoder position", climber.getPos());
+        climber.updateInputs(climberIOInputs);
+        Logger.processInputs("Climber", climberIOInputs);
 
     }
 }

@@ -135,4 +135,9 @@ public class ClimberIOSpark implements ClimberIO {
         climberMotor.configure(climberSetConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         pid.setReference(0,ControlType.kPosition, ClosedLoopSlot.kSlot0, 0, ArbFFUnits.kVoltage);
     }
+
+    @Override
+    public void updateInputs(ClimberIOInputs inputs) {
+        inputs.encoderPosition = encoder.getPosition();
+    }
 }

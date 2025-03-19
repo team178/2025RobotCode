@@ -5,6 +5,7 @@ import org.littletonrobotics.junction.AutoLog;
 public interface ClimberIO {
     @AutoLog
     public static class ClimberIOInputs {
+        public double encoderPosition = 0;
     }
     
     public default void setClimberVolts(boolean low, boolean high) {}
@@ -20,4 +21,6 @@ public interface ClimberIO {
     // public default void setPos(double encoderValue, double kG) {}
 
     public default void setReference(double p) {}
+
+    public default void updateInputs(ClimberIOInputs inputs) {};
 }
