@@ -12,12 +12,14 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.LEDPattern;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.util.Color;
 import frc.robot.util.ControlConstants;
 
 public class Constants {
@@ -379,5 +381,60 @@ public class Constants {
 	    public static final Pose2d blueCloseRightReef = new Pose2d(3.2512, fieldHeight / 2 - 0.164338, Rotation2d.kZero);
 		public static final Pose2d redFarLeftReef = blueCloseLeftReef.plus(betweenReefsTransform);
 		public static final Pose2d redFarRightReef = blueCloseRightReef.plus(betweenReefsTransform);
+	}
+
+	public static class LightsConstants {
+		/* To Find
+		 * Lights RoboRio PWM Port
+		 * Lights LED Strip length
+		 * Further Lights Actions
+		 */
+
+		public static final int kPort = 0;
+		public static final int kLength = 0;
+
+		public static final int kTeamBlueR = 15;
+		public static final int kTeamBlueG = 8;
+		public static final int kTeamBlueB = 56;
+		public static final LEDPattern kTeamBluePattern = 
+			LEDPattern.solid(new Color(
+					kTeamBlueR,
+					kTeamBlueG,
+					kTeamBlueB
+				)
+			);
+		
+		public static final int kTeamYellowR = 255;
+		public static final int kTeamYellowG = 208;
+		public static final int kTeamYellowB = 0;
+		public static final LEDPattern kTeamYellowPattern = 
+			LEDPattern.solid(new Color(
+					kTeamYellowR,
+					kTeamYellowG,
+					kTeamYellowB
+				)
+			);
+
+		public static final int kFRCRedR = 237;
+		public static final int kFRCRedG = 28;
+		public static final int kFRCRedB = 36;
+		public static final LEDPattern kFRCRedPattern = 
+			LEDPattern.solid(new Color(
+					kFRCRedR,
+					kFRCRedG,
+					kFRCRedB
+				)
+			);
+
+		public static final int kFRCBlueR = 0;
+		public static final int kFRCBlueG = 102;
+		public static final int kFRCBlueB = 179;
+		public static final LEDPattern kFRCBluePattern = 
+			LEDPattern.solid(new Color(
+					kFRCBlueR,
+					kFRCBlueG,
+					kFRCBlueB
+				)
+			);
 	}
 }
