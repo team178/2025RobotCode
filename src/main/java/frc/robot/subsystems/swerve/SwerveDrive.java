@@ -322,7 +322,7 @@ public class SwerveDrive extends SubsystemBase {
                 Logger.recordOutput("Swerve/desiredPose", desiredPose);
                 Logger.recordOutput("Swerve/errorPose", errorPose);
                 double vyReefRelative = presetPosController.calculate(errorPose.getY(), 0);
-                if(vyReefRelative > 0.4) vyReefRelative *= elevatorSpeedFactor;
+                if(vyReefRelative > 0.4) vyReefRelative *= elevatorSpeedFactor; // TODO double check when higher kP
                 Logger.recordOutput("Swerve/vyReefRelative", vyReefRelative);
                 
                 fieldRelativeSpeeds = fieldRelative ? 
@@ -651,25 +651,44 @@ public class SwerveDrive extends SubsystemBase {
         if(fieldZone.equals(FieldZones.OPPOSITE)) {
             isAligned = false;
         } else {
-            Pose2d leftErrorPose = new Pose2d(getPose().getX() - fieldZone.leftReefPose.getX(), getPose().getY() - fieldZone.leftReefPose.getY(), getPose().getRotation().minus(fieldZone.leftReefPose.getRotation()));
-            Pose2d rightErrorPose = new Pose2d(getPose().getX() - fieldZone.rightReefPose.getX(), getPose().getY() - fieldZone.rightReefPose.getY(), getPose().getRotation().minus(fieldZone.rightReefPose.getRotation()));
+            Pose2d leftErrorPose = new Pose2d(
+                getPose().getX() - fieldZone.leftReefPose.getX(),
+                getPose().getY() - fieldZone.leftReefPose.getY(),
+                getPose().getRotation().minus(fieldZone.leftReefPose.getRotation())
+            );
+            Pose2d rightErrorPose = new Pose2d(
+                getPose().getX() - fieldZone.rightReefPose.getX(),
+                getPose().getY() - fieldZone.rightReefPose.getY(),
+                getPose().getRotation().minus(fieldZone.rightReefPose.getRotation())
+            );
             if(desiredPresetPosition.equals(PresetPositionType.LEFTREEF) || desiredPresetPosition.equals(PresetPositionType.RIGHTREEF)) {
                 Pose2d desiredPose = desiredPresetPosition.equals(PresetPositionType.LEFTREEF) ? fieldZone.leftReefPose : fieldZone.rightReefPose;
-                Pose2d errorPose = new Pose2d(getPose().getX() - desiredPose.getX(), getPose().getY() - desiredPose.getY(), getPose().getRotation().minus(desiredPose.getRotation()));
-                if(Math.abs(errorPose.getX()) < 0.05 && Math.abs(errorPose.getY()) < 0.02) isAligned = true;
-                else isAligned = false;
+                Pose2d errorPose = new Pose2d(
+                    getPose().getX() - desiredPose.getX(),
+                    getPose().getY() - desiredPose.getY(),
+                    getPose().getRotation().minus(desiredPose.getRotation())
+                );
+                isAligned =
+                    Math.abs(errorPose.getX()) < SwerveConstants.kReefAlignXTolerance &&
+                    Math.abs(errorPose.getY()) < SwerveConstants.kReefAlignYTolerance &&
+                    Math.abs(errorPose.getRotation().getDegrees()) < SwerveConstants.kReefAlignHeadingTolerance;
                 Logger.recordOutput("Swerve/isAlignedErrorPose", errorPose);
                 errorX = errorPose.getX();
                 errorY = errorPose.getY();
                 errorHeading = errorPose.getRotation().getDegrees();
                 reefAimed = true;
             } else {
-                if((Math.abs(leftErrorPose.getX()) < 0.04 && Math.abs(leftErrorPose.getY()) < 0.02)
-                || Math.abs(rightErrorPose.getX()) < 0.04 && Math.abs(rightErrorPose.getY()) < 0.02) isAligned = true;
-                else isAligned = false;
-                errorX = Math.min(leftErrorPose.getX(), rightErrorPose.getX());
-                errorY = Math.min(leftErrorPose.getY(), rightErrorPose.getY());
+                errorX = Math.abs(leftErrorPose.getX()) < Math.abs(rightErrorPose.getX()) ? leftErrorPose.getX() : rightErrorPose.getX();
+                errorY = Math.abs(leftErrorPose.getY()) < Math.abs(rightErrorPose.getY()) ? leftErrorPose.getY() : rightErrorPose.getY();
                 errorHeading = Math.min(leftErrorPose.getRotation().getDegrees(), rightErrorPose.getRotation().getDegrees());
+                isAligned = 
+                    (Math.abs(leftErrorPose.getX()) < SwerveConstants.kReefAlignXTolerance &&
+                    Math.abs(leftErrorPose.getY()) < SwerveConstants.kReefAlignYTolerance &&
+                    Math.abs(leftErrorPose.getRotation().getDegrees()) < SwerveConstants.kReefAlignHeadingTolerance)
+                    ||
+                    (Math.abs(rightErrorPose.getX()) < SwerveConstants.kReefAlignXTolerance &&
+                    Math.abs(rightErrorPose.getY()) < SwerveConstants.kReefAlignYTolerance &&
+                    Math.abs(leftErrorPose.getRotation().getDegrees()) < SwerveConstants.kReefAlignHeadingTolerance);
                 reefAimed = false;
             }
             Logger.recordOutput("Swerve/isAlignedErrorPoseLeft", leftErrorPose);

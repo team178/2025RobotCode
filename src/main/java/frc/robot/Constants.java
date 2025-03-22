@@ -94,6 +94,10 @@ public class Constants {
 
 		public static final double kSlowedMult = 0.12;
 
+		public static final double kReefAlignXTolerance = 0.02; // meters
+		public static final double kReefAlignYTolerance = 0.015; // meters
+		public static final double kReefAlignHeadingTolerance = 2; // degrees
+
 		public static final SwerveDriveKinematics kSwerveKinematics = new SwerveDriveKinematics( //! make sure these are the right order, FRONT left right, BACK left right
 			new Translation2d(-SwerveConstants.kWheelDistanceMeters / 2, SwerveConstants.kWheelDistanceMeters / 2),
 			new Translation2d(SwerveConstants.kWheelDistanceMeters / 2, SwerveConstants.kWheelDistanceMeters / 2), // I REALLY DONT KNOW ANYMORE
@@ -113,7 +117,7 @@ public class Constants {
 
 		public static final ControlConstants kPresetPosControlConstants = new ControlConstants(
 			"SwervePresetPos",
-			2.5,
+			2.5, // TODO probably turn up
 			0,
 			0,
 			0,
@@ -126,7 +130,7 @@ public class Constants {
 			// Preferences.initDouble("kSwerveTestDrive", 0);
 			Preferences.initDouble("odometry/setPoseX", 0);
 			Preferences.initDouble("odometry/setPoseY", 0);
-			Preferences.initDouble("odometry/setPoseRot", 0);
+			Preferences.initDouble("odometry/setPoseRot", Units.degreesToRadians(120));
 			System.out.println("SwerveConstants initialized");
 		}
 	}
@@ -180,7 +184,7 @@ public class Constants {
 
             driveConfig
                 .idleMode(IdleMode.kBrake)
-                .smartCurrentLimit(30)
+                .smartCurrentLimit(40)
                 .voltageCompensation(12)
 				.closedLoopRampRate(0.01)
             ; driveConfig.closedLoop
@@ -347,7 +351,7 @@ public class Constants {
 		static {
 			climberConfig
 				.idleMode(IdleMode.kBrake)
-				.smartCurrentLimit(30)
+				.smartCurrentLimit(40)
 				.voltageCompensation(12)
 			;
 		}
@@ -382,6 +386,7 @@ public class Constants {
 		public static final Pose2d redFarLeftReef = blueCloseLeftReef.plus(betweenReefsTransform);
 		public static final Pose2d redFarRightReef = blueCloseRightReef.plus(betweenReefsTransform);
 
+		// station
 		public static final Pose2d blueCoralY = new Pose2d(1.59336668626, 7.44378938214, Rotation2d.fromDegrees(306));
 		public static final Pose2d blueCoralZ = new Pose2d(1.59336668626, fieldHeight - 7.44378938214, Rotation2d.fromDegrees(54));
 		public static final Pose2d redCoralY = blueCoralY.rotateAround(fieldCenter, Rotation2d.k180deg);
