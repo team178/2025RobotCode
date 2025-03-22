@@ -21,12 +21,19 @@ public class Elevator extends SubsystemBase {
     private boolean intaking;
     private boolean bouncing;
 
+    private double desiredFunnelVolts;
+    private double lastUpperPhotosensorTrigger;
+
+    private boolean dealgaeRunning;
+
     public Elevator(ElevatorIO io) {
         this.elevatorIO = io;
         elevatorIOInputs = new ElevatorIOInputsAutoLogged();
         openLoop = false;
         intaking = false;
         bouncing = true;
+        dealgaeRunning = false;
+        desiredFunnelVolts = 0;
         Preferences.initDouble("ele/leftvolts", 0);
         Preferences.initDouble("ele/rightvolts", 0);
         Preferences.initDouble("ele/elevatorvolts", 0);
@@ -75,7 +82,8 @@ public class Elevator extends SubsystemBase {
             openLoop = false;
             if(intaking) {
                 elevatorIO.setEffectorVolts(0, 0);
-                elevatorIO.setFunnelMotorVolts(0);
+                // elevatorIO.setFunnelMotorVolts(0);
+                desiredFunnelVolts = 0;
                 intaking = false;
             }
             elevatorIO.setElevatorPosition(position);
@@ -110,7 +118,8 @@ public class Elevator extends SubsystemBase {
     }
 
     public Command runSetFunnelVolts(double volts) {
-        return runOnce(() -> elevatorIO.setFunnelMotorVolts(volts));
+        // return runOnce(() -> elevatorIO.setFunnelMotorVolts(volts));
+        return runOnce(() -> desiredFunnelVolts = volts);
     }
 
     public Command runSetDealgaeVolts(double volts) {
@@ -155,9 +164,27 @@ public class Elevator extends SubsystemBase {
         }
         if(!openLoop) {
             if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) && !hasCoral() && bouncing) {
-                elevatorIO.setElevatorPosition(ElevatorPosition.HOME.height + (0.003 * Math.sin(Timer.getFPGATimestamp() * 12)));
+                elevatorIO.setElevatorPosition(ElevatorPosition.HOME.height + (0.005 * Math.sin(Timer.getFPGATimestamp() * 12)));
             } else elevatorIO.setElevatorPosition(elevatorIOInputs.desiredHeight);
             // elevatorIO.setElevatorPosition(elevatorIOInputs.desiredPosition);
+        }
+
+        if(elevatorIOInputs.upperPhotosensor) {
+            lastUpperPhotosensorTrigger = Timer.getFPGATimestamp();
+        }
+        if(Timer.getFPGATimestamp() - lastUpperPhotosensorTrigger < 1.5 && !elevatorIOInputs.lowerPhotosensor) {
+            elevatorIO.setFunnelMotorVolts(Timer.getFPGATimestamp() % 6 > 1.5 && Timer.getFPGATimestamp() % 1.5 > 0.75 ? -desiredFunnelVolts : desiredFunnelVolts);
+        } else {
+            elevatorIO.setFunnelMotorVolts(desiredFunnelVolts);
+        }
+
+        if(!dealgaeRunning && elevatorIOInputs.elevatorHeight > 0.05) {
+            dealgaeRunning = true;
+            elevatorIO.setDealgaeMotorVolts(6);
+        }
+        if(dealgaeRunning && elevatorIOInputs.elevatorHeight < 0.05) {
+            dealgaeRunning = false;
+            elevatorIO.setDealgaeMotorVolts(0);
         }
     }
 
@@ -204,11 +231,13 @@ public class Elevator extends SubsystemBase {
             if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) && intaking) {
                 intaking = false;
                 elevatorIO.setEffectorVolts(0, 0);
-                elevatorIO.setFunnelMotorVolts(0);
+                // elevatorIO.setFunnelMotorVolts(0);
+                desiredFunnelVolts = 0;
             } else {
                 if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME)) {
                     intaking = true;
-                    elevatorIO.setFunnelMotorVolts(funnelVolts);
+                    // elevatorIO.setFunnelMotorVolts(funnelVolts);
+                    desiredFunnelVolts = funnelVolts;
                     elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
                 } else if(isAlignedSupplier.getAsBoolean()) {
                     if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1)) {

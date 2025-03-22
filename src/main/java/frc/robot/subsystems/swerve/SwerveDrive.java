@@ -14,6 +14,7 @@ import choreo.trajectory.SwerveSample;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -26,6 +27,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -65,7 +67,8 @@ public class SwerveDrive extends SubsystemBase {
     private PIDController trajHeadingController;
 
     private PIDController presetRotController;
-    private PIDController presetPosController;
+    private ProfiledPIDController presetXController;
+    private PIDController presetYController;
 
     private FieldZones fieldZone;
 
@@ -129,12 +132,18 @@ public class SwerveDrive extends SubsystemBase {
         );
         poseEstimator = new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, modulePositions, (Constants.isRed() ? new Pose2d(17.548, 8.052, Rotation2d.kPi) : new Pose2d()));
 
-        presetPosController = new PIDController(
+        presetXController = new ProfiledPIDController(
+            SwerveConstants.kPresetPosControlConstants.kP(),
+            SwerveConstants.kPresetPosControlConstants.kI(),
+            SwerveConstants.kPresetPosControlConstants.kD(),
+            new Constraints(SwerveConstants.kMagVelLimit, SwerveConstants.kMagVelLimit * 2)
+        );
+        presetYController = new PIDController(
             SwerveConstants.kPresetPosControlConstants.kP(),
             SwerveConstants.kPresetPosControlConstants.kI(),
             SwerveConstants.kPresetPosControlConstants.kD()
         );
-        presetPosController.setTolerance(0.01);
+        presetYController.setTolerance(0.01);
 
         trajVXController = new PIDController(10, 0, 0);
         trajVYController = new PIDController(10, 0, 0);
@@ -321,7 +330,7 @@ public class SwerveDrive extends SubsystemBase {
                 errorPose = errorPose.rotateAround(Translation2d.kZero, desiredPose.getRotation().unaryMinus());
                 Logger.recordOutput("Swerve/desiredPose", desiredPose);
                 Logger.recordOutput("Swerve/errorPose", errorPose);
-                double vyReefRelative = presetPosController.calculate(errorPose.getY(), 0);
+                double vyReefRelative = presetYController.calculate(errorPose.getY(), 0);
                 if(vyReefRelative > 0.4) vyReefRelative *= elevatorSpeedFactor; // TODO double check when higher kP
                 Logger.recordOutput("Swerve/vyReefRelative", vyReefRelative);
                 
@@ -337,8 +346,8 @@ public class SwerveDrive extends SubsystemBase {
                 break;
             case PROCESSOR:
                 double vx = switch(Constants.kFieldType.getSelected()) {
-                    case ANDYMARK -> presetPosController.calculate(getPose().getX(), Constants.isRed() ? FieldConstants.fieldWidth - 6.27 : 6.27);
-                    case WELDED -> presetPosController.calculate(getPose().getX(), Constants.isRed() ? FieldConstants.fieldWidth - 6.18 : 6.18);
+                    case ANDYMARK -> presetYController.calculate(getPose().getX(), Constants.isRed() ? FieldConstants.fieldWidth - 6.27 : 6.27);
+                    case WELDED -> presetYController.calculate(getPose().getX(), Constants.isRed() ? FieldConstants.fieldWidth - 6.18 : 6.18);
                     default -> 0;
                 } * elevatorSpeedFactor;
                 fieldRelativeSpeeds = fieldRelative ? 
@@ -502,9 +511,9 @@ public class SwerveDrive extends SubsystemBase {
             for(SDSSwerveModule module : modules) {
                 module.updateControlConstants();
             }
-            presetPosController.setP(SwerveConstants.kPresetRotControlConstants.kP());
-            presetPosController.setI(SwerveConstants.kPresetRotControlConstants.kI());
-            presetPosController.setD(SwerveConstants.kPresetRotControlConstants.kD());
+            presetYController.setP(SwerveConstants.kPresetRotControlConstants.kP());
+            presetYController.setI(SwerveConstants.kPresetRotControlConstants.kI());
+            presetYController.setD(SwerveConstants.kPresetRotControlConstants.kD());
             System.out.println("Swerve control constants updated");
         });
     }
