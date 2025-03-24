@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
@@ -193,11 +194,14 @@ public class Elevator extends SubsystemBase {
      * @param position Elevator height to raise elevator to and score at.
      * @return Command Group representing the full scoring movement.
      */
-    public Command runScoreToElevatorPosition(ElevatorPosition position) {
-        if(position.equals(ElevatorPosition.HOME)) return runToElevatorPosition(position);
+    public Command runWaitToElevatorPosition(ElevatorPosition position, double tolerance) {
         return runToElevatorPosition(position)
-            .andThen(new WaitUntilCommand(() -> Math.abs(position.height - elevatorIOInputs.elevatorHeight) < 0.02))
-            .andThen(!position.equals(ElevatorPosition.L1) ? runEffector(-4, 4) : runEffector(-6, 3))
+            .andThen(new WaitUntilCommand(() -> Math.abs(position.height - elevatorIOInputs.elevatorHeight) < tolerance))
+            .andThen(Commands.print("Done waiting"));
+    }
+
+    public Command runEjectScore() {
+        return (!elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1) ? runEffector(-4, 4) : runEffector(-6, 3))
             .andThen(new WaitUntilCommand(() -> !getLowerPhotosensor()))
             .andThen(new WaitCommand(0.1)) // TODO may want to look at tweaking the time here
             .andThen(runEffector(0, 0))
