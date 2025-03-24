@@ -42,14 +42,14 @@ public class FollowTrajectory extends Command {
 
     @Override
     public boolean isFinished() {
-        // Optional<SwerveSample> finalSample = trajectory.getFinalSample(false);
-        // if(finalSample.isPresent()) {
-        //     return (timer.get() > trajectory.getTotalTime() + 5 ||
-        //         (timer.get() > trajectory.getTotalTime() + 1 &&
-        //         Math.abs(finalSample.get().x - swerveDrive.getPose().getX()) < 0.05 &&
-        //         Math.abs(finalSample.get().y - swerveDrive.getPose().getY()) < 0.05 &&
-        //         Math.abs(finalSample.get().heading - swerveDrive.getPose().getRotation().getRadians()) < 0.1));
-        // }
+        Optional<SwerveSample> finalSample = trajectory.getFinalSample(false);
+        if(finalSample.isPresent()) {
+            return (timer.get() > trajectory.getTotalTime() + 3 ||
+                (timer.get() > trajectory.getTotalTime() + 0.3 &&
+                Math.abs(finalSample.get().x - swerveDrive.getPose().getX()) < 0.01 &&
+                Math.abs(finalSample.get().y - swerveDrive.getPose().getY()) < 0.01 &&
+                Math.abs(finalSample.get().heading - swerveDrive.getPose().getRotation().getRadians()) < 0.01));
+        }
         return timer.get() > trajectory.getTotalTime() + 2;
     }
 }
