@@ -107,9 +107,9 @@ public class Constants {
 
 		public static final ControlConstants kPresetRotControlConstants = new ControlConstants(
 			"SwervePresetRot",
-			10,
+			7,
 			0,
-			1,
+			0.1,
 			0,
 			0,
 			0
@@ -117,9 +117,9 @@ public class Constants {
 
 		public static final ControlConstants kPresetPosControlConstants = new ControlConstants(
 			"SwervePresetPos",
-			2.5, // TODO probably turn up
+			10, // TODO probably turn up
 			0,
-			0,
+			0.2,
 			0,
 			0,
 			0

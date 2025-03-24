@@ -105,9 +105,9 @@ public class RobotContainer {
             .withSize(1, 1);
 
         swerve.setToAimSuppliers(
-            driverController.leftTrigger()::getAsBoolean, // aim reef
-            driverController.b()::getAsBoolean, // aim processor
-            driverController.a()::getAsBoolean // aim station
+            driverController.leftTrigger(), // aim reef
+            driverController.b(), // aim processor
+            driverController.a() // aim station
         );
         swerve.setReefChooserSuppliers(
             driverController::getRightX,
@@ -119,17 +119,26 @@ public class RobotContainer {
             driverController::getLeftY, // vy
             driverController::getRightX, // omega
             driverController::getRightTriggerAxis, // raw slow input
-            driverController.leftBumper()::getAsBoolean, // robot centric
-            driverController.rightBumper()::getAsBoolean // no optimize
+            driverController.rightBumper(), // robot centric
+            driverController.start() // no optimize
         ));
 
         driverController.y().onTrue(swerve.runZeroGyro());
         driverController.back().onTrue(swerve.runToggleToXPosition(true));
         driverController.b().onTrue(swerve.runUpdateControlConstants().andThen(elevator.runUpdateControlConstants()));
-        driverController.start().onTrue(swerve.runSetTempPose());
         driverController.povLeft().onTrue(swerve.runTogglePresetPosition(PresetPositionType.LEFTREEF));
         driverController.povRight().onTrue(swerve.runTogglePresetPosition(PresetPositionType.RIGHTREEF));
         driverController.povUp().onTrue(swerve.runTogglePresetPosition(PresetPositionType.PROCESSOR));
+        driverController.leftBumper().onTrue(swerve.runSetPresetXEnabled(true));
+        driverController.leftBumper().onFalse(swerve.runSetPresetXEnabled(false));
+
+        Combo setTempPoseCombo = new Combo("setTempPose Combo", 0.5,
+            driverController.rightBumper(),
+            driverController.rightBumper().negate(),
+            driverController.rightBumper(),
+            driverController.start()
+        );
+        setTempPoseCombo.getTrigger().onTrue(swerve.runSetTempPose());
         
         // if(Constants.simMode.equals(RobotMode.SIM)) {
         //     swerve.setDefaultCommand(swerve.runSimOdometryMoveBy(

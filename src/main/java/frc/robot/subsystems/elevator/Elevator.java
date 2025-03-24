@@ -240,6 +240,8 @@ public class Elevator extends SubsystemBase {
                     desiredFunnelVolts = funnelVolts;
                     elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
                 } else if(isAlignedSupplier.getAsBoolean()) {
+                // TODO make it hold down still work
+                // } else if(isAlignedSupplier.getAsBoolean() && Math.abs(elevatorIOInputs.elevatorHeight - elevatorIOInputs.desiredHeight) < 0.0015) {
                     if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1)) {
                         elevatorIO.setEffectorVolts(-effectorVolts * 6 / 7, effectorVolts * 3 / 7); // over 5 to over 7
                     } else {
