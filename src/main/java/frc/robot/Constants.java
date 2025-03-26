@@ -115,11 +115,21 @@ public class Constants {
 			0
 		);
 
-		public static final ControlConstants kPresetPosControlConstants = new ControlConstants(
+		public static final ControlConstants kPresetPosXControlConstants = new ControlConstants(
 			"SwervePresetPos",
 			10, // TODO probably turn up
 			0,
 			0.2,
+			0,
+			0,
+			0
+		);
+
+		public static final ControlConstants kPresetPosYControlConstants = new ControlConstants(
+			"SwervePresetPos",
+			10, // TODO probably turn up
+			0,
+			0,
 			0,
 			0,
 			0
@@ -231,6 +241,7 @@ public class Constants {
 		public static final SparkMaxConfig elevatorLeaderConfig = new SparkMaxConfig();
 		public static final SparkMaxConfig elevatorFollowerConfig = new SparkMaxConfig();
 		public static final SparkMaxConfig effectorConfig = new SparkMaxConfig(); // also used for funnel motor, since is the same
+		public static final SparkMaxConfig dealgaeConfig = new SparkMaxConfig();
 		
 		static {
 			elevatorLeaderConfig
@@ -274,6 +285,15 @@ public class Constants {
                 .smartCurrentLimit(30)
                 .voltageCompensation(12)
             ; effectorConfig.encoder
+				.positionConversionFactor(1) // revolutions
+				.velocityConversionFactor(1) // RPM
+			;
+
+            dealgaeConfig
+                .idleMode(IdleMode.kCoast)
+                .smartCurrentLimit(30)
+                .voltageCompensation(12)
+            ; dealgaeConfig.encoder
 				.positionConversionFactor(1) // revolutions
 				.velocityConversionFactor(1) // RPM
 			;
