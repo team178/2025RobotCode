@@ -100,14 +100,14 @@ public class RobotContainer {
         );
         overrideElevatorFactorCombo.getTrigger().onTrue(Commands.runOnce(() -> {}));
         Shuffleboard.getTab("Teleoperated")
-            .addBoolean("EleFact Override", overrideElevatorFactorCombo.getTrigger()).
-            withPosition(8, 0)
+            .addBoolean("EleFact Override", overrideElevatorFactorCombo.getTrigger())
+            .withPosition(8, 2)
             .withSize(1, 1);
 
         swerve.setToAimSuppliers(
-            driverController.leftTrigger()::getAsBoolean, // aim reef
-            driverController.b()::getAsBoolean, // aim processor
-            driverController.a()::getAsBoolean // aim station
+            driverController.leftTrigger(), // aim reef
+            driverController.b(), // aim processor
+            driverController.a() // aim station
         );
         swerve.setReefChooserSuppliers(
             driverController::getRightX,
@@ -119,17 +119,26 @@ public class RobotContainer {
             driverController::getLeftY, // vy
             driverController::getRightX, // omega
             driverController::getRightTriggerAxis, // raw slow input
-            driverController.leftBumper()::getAsBoolean, // robot centric
-            driverController.rightBumper()::getAsBoolean // no optimize
+            driverController.rightBumper(), // robot centric
+            driverController.start() // no optimize
         ));
 
         driverController.y().onTrue(swerve.runZeroGyro());
         driverController.back().onTrue(swerve.runToggleToXPosition(true));
         driverController.b().onTrue(swerve.runUpdateControlConstants().andThen(elevator.runUpdateControlConstants()));
-        driverController.start().onTrue(swerve.runSetTempPose());
         driverController.povLeft().onTrue(swerve.runTogglePresetPosition(PresetPositionType.LEFTREEF));
         driverController.povRight().onTrue(swerve.runTogglePresetPosition(PresetPositionType.RIGHTREEF));
         driverController.povUp().onTrue(swerve.runTogglePresetPosition(PresetPositionType.PROCESSOR));
+        driverController.leftBumper().onTrue(swerve.runSetPresetXEnabled(true));
+        driverController.leftBumper().onFalse(swerve.runSetPresetXEnabled(false));
+
+        Combo setTempPoseCombo = new Combo("setTempPose Combo", 0.5,
+            driverController.rightBumper(),
+            driverController.rightBumper().negate(),
+            driverController.rightBumper(),
+            driverController.start()
+        );
+        setTempPoseCombo.getTrigger().onTrue(swerve.runSetTempPose());
         
         // if(Constants.simMode.equals(RobotMode.SIM)) {
         //     swerve.setDefaultCommand(swerve.runSimOdometryMoveBy(
@@ -146,7 +155,7 @@ public class RobotContainer {
 
         // driverController.povUp().onTrue(elevator.runEffectorPreferences());
         // driverController.povUp().onFalse(elevator.runEffector(0, 0));
-        // driverController.povDown().onTrue(elevator.runaEffectorPreferences());
+        // driverController.povDown().onTrue(elevator.runReversedEffectorPreferences());
         // driverController.povDown().onFalse(elevator.runEffector(0, 0));
 
         // driverController.povLeft().onTrue(elevator.runElevatorOpenLoopPreferences());
@@ -164,16 +173,18 @@ public class RobotContainer {
             .addBoolean("Aligned Override", alignedOverrideCombo.getTrigger()).
             withPosition(3, 2)
             .withSize(1, 1);
+        elevator.setIsAlignedSupplier(() -> swerve.isAligned() || alignedOverrideCombo.getTrigger().getAsBoolean());
+        elevator.setScoreComboSupplier(auxController.rightTrigger());
+        elevator.setErrorDistanceSupplier(swerve::getErrorDistance);
 
         auxController.b().onTrue(elevator.runToElevatorPosition(ElevatorPosition.HOME));
         auxController.a().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L1));
         auxController.x().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L2));
         auxController.y().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L3));
         auxController.leftBumper().onTrue(elevator.runIntakeEffector(
-            5, // effector volts
-            -2, // funnel volts
-            () -> swerve.isAligned() || alignedOverrideCombo.getTrigger().getAsBoolean() // is aligned supplier
-            // () -> true
+            // TODO slow to 4
+            4, // effector volts
+            -2 // funnel volts
         ));
         auxController.leftBumper().onFalse(elevator.runStopIntakeEffector());
 

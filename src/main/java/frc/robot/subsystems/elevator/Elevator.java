@@ -1,6 +1,7 @@
 package frc.robot.subsystems.elevator;
 
 import java.util.function.BooleanSupplier;
+import java.util.function.DoubleSupplier;
 
 import org.littletonrobotics.junction.Logger;
 
@@ -20,21 +21,36 @@ public class Elevator extends SubsystemBase {
     private boolean openLoop;
 
     private boolean intaking;
+    private boolean ejecting;
     private boolean bouncing;
 
+    private double desiredLeftVolts;
+    private double desiredRightVolts;
     private double desiredFunnelVolts;
     private double lastUpperPhotosensorTrigger;
+    private double lastLowerPhotosensorTrigger;
 
+    private BooleanSupplier isAlignedSupplier;
+    private BooleanSupplier scoreComboSupplier;
+    private boolean awaitingScoreCombo;
     private boolean dealgaeRunning;
+
+    private DoubleSupplier errorDistanceSupplier;
 
     public Elevator(ElevatorIO io) {
         this.elevatorIO = io;
         elevatorIOInputs = new ElevatorIOInputsAutoLogged();
         openLoop = false;
         intaking = false;
+        ejecting = false;
         bouncing = true;
         dealgaeRunning = false;
+        awaitingScoreCombo = false;
+        desiredLeftVolts = 0;
+        desiredRightVolts = 0;
         desiredFunnelVolts = 0;
+        lastUpperPhotosensorTrigger = 0;
+        lastLowerPhotosensorTrigger = 0;
         Preferences.initDouble("ele/leftvolts", 0);
         Preferences.initDouble("ele/rightvolts", 0);
         Preferences.initDouble("ele/elevatorvolts", 0);
@@ -59,8 +75,23 @@ public class Elevator extends SubsystemBase {
             .withPosition(2, 2)
             .withSize(1, 1);
         teleopTab.addBoolean("Home Bounce", () -> bouncing)
-            .withPosition(7, 0)
+            .withPosition(7, 2)
             .withSize(1, 1);
+        teleopTab.addBoolean("Awaiting Home", () -> awaitingScoreCombo)
+            .withPosition(7, 1)
+            .withSize(1, 1);
+    }
+
+    public void setIsAlignedSupplier(BooleanSupplier isAlignedSupplier) {
+        this.isAlignedSupplier = isAlignedSupplier;
+    }
+
+    public void setScoreComboSupplier(BooleanSupplier scoreComboSupplier) {
+        this.scoreComboSupplier = scoreComboSupplier;
+    }
+    
+    public void setErrorDistanceSupplier(DoubleSupplier errorDistanceSupplier) {
+        this.errorDistanceSupplier = errorDistanceSupplier;
     }
 
     public Command runElevatorOpenLoop(double volts) {
@@ -82,7 +113,9 @@ public class Elevator extends SubsystemBase {
         return runOnce(() -> {
             openLoop = false;
             if(intaking) {
-                elevatorIO.setEffectorVolts(0, 0);
+                desiredLeftVolts = 0;
+                desiredRightVolts = 0;
+                // elevatorIO.setEffectorVolts(0, 0);
                 // elevatorIO.setFunnelMotorVolts(0);
                 desiredFunnelVolts = 0;
                 intaking = false;
@@ -107,15 +140,27 @@ public class Elevator extends SubsystemBase {
     }
 
     public Command runEffector(double left, double right) {
-        return runOnce(() -> elevatorIO.setEffectorVolts(left, right));
+        return runOnce(() -> {
+            desiredLeftVolts = left;
+            desiredRightVolts = right;
+            // elevatorIO.setEffectorVolts(left, right);
+        });
     }
 
     public Command runEffectorPreferences() {
-        return runOnce(() -> elevatorIO.setEffectorVolts(Preferences.getDouble("ele/leftvolts", 0), Preferences.getDouble("ele/rightvolts", 0)));
+        return runOnce(() -> {
+            desiredLeftVolts = Preferences.getDouble("ele/leftvolts", 0);
+            desiredRightVolts = Preferences.getDouble("ele/rightvolts", 0);
+            // elevatorIO.setEffectorVolts(Preferences.getDouble("ele/leftvolts", 0), Preferences.getDouble("ele/rightvolts", 0));
+        });
     }
 
-    public Command runaEffectorPreferences() {
-        return runOnce(() -> elevatorIO.setEffectorVolts(-Preferences.getDouble("ele/leftvolts", 0), -Preferences.getDouble("ele/rightvolts", 0)));
+    public Command runReversedEffectorPreferences() {
+        return runOnce(() -> {
+            desiredLeftVolts = -Preferences.getDouble("ele/leftvolts", 0);
+            desiredRightVolts = -Preferences.getDouble("ele/rightvolts", 0);
+            // elevatorIO.setEffectorVolts(-Preferences.getDouble("ele/leftvolts", 0), -Preferences.getDouble("ele/rightvolts", 0));
+        });
     }
 
     public Command runSetFunnelVolts(double volts) {
@@ -151,42 +196,6 @@ public class Elevator extends SubsystemBase {
         return runOnce(() -> {
             bouncing = !bouncing;
         });
-    }
-
-    @Override
-    public void periodic() {
-        elevatorIO.updateInputs(elevatorIOInputs);
-        Logger.processInputs("Elevator", elevatorIOInputs);
-
-        if(elevatorIOInputs.lowLimit) {
-            elevatorIO.resetElevatorEncoder(0);
-        } else if(elevatorIOInputs.highLimit) {
-            elevatorIO.resetElevatorEncoder(0.612);
-        }
-        if(!openLoop) {
-            if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) && !hasCoral() && bouncing) {
-                elevatorIO.setElevatorPosition(ElevatorPosition.HOME.height + (0.005 * Math.sin(Timer.getFPGATimestamp() * 12)));
-            } else elevatorIO.setElevatorPosition(elevatorIOInputs.desiredHeight);
-            // elevatorIO.setElevatorPosition(elevatorIOInputs.desiredPosition);
-        }
-
-        if(elevatorIOInputs.upperPhotosensor) {
-            lastUpperPhotosensorTrigger = Timer.getFPGATimestamp();
-        }
-        if(Timer.getFPGATimestamp() - lastUpperPhotosensorTrigger < 1.5 && !elevatorIOInputs.lowerPhotosensor) {
-            elevatorIO.setFunnelMotorVolts(Timer.getFPGATimestamp() % 6 > 1.5 && Timer.getFPGATimestamp() % 1.5 > 0.75 ? -desiredFunnelVolts : desiredFunnelVolts);
-        } else {
-            elevatorIO.setFunnelMotorVolts(desiredFunnelVolts);
-        }
-
-        if(!dealgaeRunning && elevatorIOInputs.elevatorHeight > 0.05) {
-            dealgaeRunning = true;
-            elevatorIO.setDealgaeMotorVolts(6);
-        }
-        if(dealgaeRunning && elevatorIOInputs.elevatorHeight < 0.05) {
-            dealgaeRunning = false;
-            elevatorIO.setDealgaeMotorVolts(0);
-        }
     }
 
     /**
@@ -230,11 +239,13 @@ public class Elevator extends SubsystemBase {
             .andThen(runSetFunnelVolts(0));
     }
 
-    public Command runIntakeEffector(double effectorVolts, double funnelVolts, BooleanSupplier isAlignedSupplier) {
+    public Command runIntakeEffector(double effectorVolts, double funnelVolts) {
         return runOnce(() -> {
             if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) && intaking) {
                 intaking = false;
-                elevatorIO.setEffectorVolts(0, 0);
+                desiredLeftVolts = 0;
+                desiredRightVolts = 0;
+                // elevatorIO.setEffectorVolts(0, 0);
                 // elevatorIO.setFunnelMotorVolts(0);
                 desiredFunnelVolts = 0;
             } else {
@@ -242,12 +253,19 @@ public class Elevator extends SubsystemBase {
                     intaking = true;
                     // elevatorIO.setFunnelMotorVolts(funnelVolts);
                     desiredFunnelVolts = funnelVolts;
-                    elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
-                } else if(isAlignedSupplier.getAsBoolean()) {
+                    desiredLeftVolts = -effectorVolts;
+                    desiredRightVolts = effectorVolts;
+                    // elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
+                } else {
+                    awaitingScoreCombo = scoreComboSupplier.getAsBoolean();
                     if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1)) {
-                        elevatorIO.setEffectorVolts(-effectorVolts * 6 / 7, effectorVolts * 3 / 7); // over 5 to over 7
+                        desiredLeftVolts = -effectorVolts * 6 / 7 * 5 / 4;
+                        desiredRightVolts = effectorVolts * 3 / 7 * 5 / 4;
+                        // elevatorIO.setEffectorVolts(-effectorVolts * 6 / 7, effectorVolts * 3 / 7); // over 5 to over 7
                     } else {
-                        elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
+                        desiredLeftVolts = -effectorVolts;
+                        desiredRightVolts = effectorVolts;
+                        // elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
                     }
                 }
             }
@@ -256,7 +274,11 @@ public class Elevator extends SubsystemBase {
 
     public Command runStopIntakeEffector() {
         return runOnce(() -> {
-            if(!intaking) elevatorIO.setEffectorVolts(0, 0);
+            if(!intaking) {
+                desiredLeftVolts = 0;
+                desiredRightVolts = 0;
+                // elevatorIO.setEffectorVolts(0, 0);
+            }
         }).andThen(runWaitStopIntake());
     }
 
@@ -271,5 +293,95 @@ public class Elevator extends SubsystemBase {
         .andThen(runEffector(0, 0)
         .andThen(runSetFunnelVolts(0))
         .andThen(runOnce(() -> intaking = false)));
+    }
+
+    @Override
+    public void periodic() {
+        elevatorIO.updateInputs(elevatorIOInputs);
+        Logger.processInputs("Elevator", elevatorIOInputs);
+
+        if(elevatorIOInputs.lowLimit) {
+            elevatorIO.resetElevatorEncoder(0);
+        } else if(elevatorIOInputs.highLimit) {
+            elevatorIO.resetElevatorEncoder(0.612);
+        }
+        if(!openLoop) {
+            if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) && !hasCoral() && bouncing) {
+                elevatorIO.setElevatorPosition(ElevatorPosition.HOME.height + (0.005 * Math.sin(Timer.getFPGATimestamp() * 12)));
+            } else {
+                if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) && bouncing) {
+                    elevatorIO.setElevatorPosition(errorDistanceSupplier.getAsDouble() < 0.5 ? ElevatorPosition.homeCoralPos : ElevatorPosition.HOME.height);
+                } else {
+                    elevatorIO.setElevatorPosition(elevatorIOInputs.desiredHeight);
+                }
+            }
+            // elevatorIO.setElevatorPosition(elevatorIOInputs.desiredPosition);
+        }
+
+        double realDesiredHeight = Math.max(Math.min(elevatorIOInputs.desiredHeight, 0.612), 0);
+        if(desiredLeftVolts == 0) {
+            elevatorIO.setLeftEffectorVolts(desiredLeftVolts);
+        } else if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) ||
+            (Math.abs(realDesiredHeight - elevatorIOInputs.elevatorHeight) < 0.0015 &&
+            (isAlignedSupplier == null || isAlignedSupplier.getAsBoolean())
+            )
+        ) {
+            elevatorIO.setLeftEffectorVolts(desiredLeftVolts);
+        } else {
+            elevatorIO.setLeftEffectorVolts(0);
+        }
+        if(desiredRightVolts == 0) {
+            elevatorIO.setRightEffectorVolts(desiredRightVolts);
+        } else if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) ||
+            (Math.abs(realDesiredHeight - elevatorIOInputs.elevatorHeight) < 0.0015 &&
+            (isAlignedSupplier == null || isAlignedSupplier.getAsBoolean())
+            )
+        ) {
+            elevatorIO.setRightEffectorVolts(desiredRightVolts);
+        } else {
+            elevatorIO.setRightEffectorVolts(0);
+        }
+
+        if(elevatorIOInputs.upperPhotosensor) {
+            lastUpperPhotosensorTrigger = Timer.getFPGATimestamp();
+        }
+        if(elevatorIOInputs.lowerPhotosensor) {
+            lastLowerPhotosensorTrigger = Timer.getFPGATimestamp();
+        }
+
+        if(Timer.getFPGATimestamp() - lastUpperPhotosensorTrigger < 0.5 && !elevatorIOInputs.lowerPhotosensor) {
+            elevatorIO.setFunnelMotorVolts(Timer.getFPGATimestamp() % 6 > 1.5 && Timer.getFPGATimestamp() % 1.5 > 0.75 ? -desiredFunnelVolts : desiredFunnelVolts);
+        } else {
+            elevatorIO.setFunnelMotorVolts(desiredFunnelVolts);
+        }
+
+        if(!dealgaeRunning && elevatorIOInputs.elevatorHeight > 0.01) {
+            dealgaeRunning = true;
+            elevatorIO.setDealgaeMotorVolts(9);
+        }
+        if(dealgaeRunning && elevatorIOInputs.elevatorHeight < 0.01) {
+            dealgaeRunning = false;
+            elevatorIO.setDealgaeMotorVolts(0);
+        }
+
+        if(
+            awaitingScoreCombo &&
+            !elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) &&
+            Timer.getFPGATimestamp() - lastLowerPhotosensorTrigger > 0.3 &&
+            Math.abs(realDesiredHeight - elevatorIOInputs.elevatorHeight) < 0.0015
+        ) {
+            awaitingScoreCombo = false;
+            elevatorIO.setElevatorPosition(ElevatorPosition.HOME);
+        }
+
+        Logger.recordOutput("Elevator/intaking", intaking);
+        Logger.recordOutput("Elevator/bouncing", bouncing);
+        Logger.recordOutput("Elevator/subdesiredLeftVolts", desiredLeftVolts);
+        Logger.recordOutput("Elevator/subdesiredRightVolts", desiredRightVolts);
+        Logger.recordOutput("Elevator/subdesiredFunnelVolts", desiredFunnelVolts);
+        Logger.recordOutput("Elevator/lastUpperPhotosensorTrigger", lastUpperPhotosensorTrigger);
+        Logger.recordOutput("Elevator/lastLowerPhotosensorTrigger", lastLowerPhotosensorTrigger);
+        Logger.recordOutput("Elevator/awaitingScoreCombo", awaitingScoreCombo);
+        Logger.recordOutput("Elevator/dealgaeRunning", dealgaeRunning);
     }
  }

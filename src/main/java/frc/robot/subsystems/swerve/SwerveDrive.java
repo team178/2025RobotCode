@@ -16,6 +16,7 @@ import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
@@ -66,9 +67,9 @@ public class SwerveDrive extends SubsystemBase {
     private PIDController trajVYController;
     private PIDController trajHeadingController;
 
-    private PIDController presetRotController;
+    private ProfiledPIDController presetRotController;
     private ProfiledPIDController presetXController;
-    private PIDController presetYController;
+    private ProfiledPIDController presetYController;
 
     private FieldZones fieldZone;
 
@@ -82,6 +83,7 @@ public class SwerveDrive extends SubsystemBase {
     private PresetPositionType desiredPresetPosition;
     private DoubleSupplier xReefChooser;
     private DoubleSupplier yReefChooser;
+    private boolean presetXEnabled;
 
     private DoubleSupplier elevatorHeightSupplier;
     private BooleanSupplier elevatorFactorOverrideSupplier;
@@ -97,7 +99,7 @@ public class SwerveDrive extends SubsystemBase {
     private double errorX;
     private double errorY;
     private double errorHeading;
-    private boolean reefAimed;
+    private boolean reefPresetted;
 
     private SendableChooser<FieldZones> tempZoneViewerChooser;
 
@@ -133,17 +135,27 @@ public class SwerveDrive extends SubsystemBase {
         poseEstimator = new SwerveDrivePoseEstimator(kinematics, rawGyroRotation, modulePositions, (Constants.isRed() ? new Pose2d(17.548, 8.052, Rotation2d.kPi) : new Pose2d()));
 
         presetXController = new ProfiledPIDController(
-            SwerveConstants.kPresetPosControlConstants.kP(),
-            SwerveConstants.kPresetPosControlConstants.kI(),
-            SwerveConstants.kPresetPosControlConstants.kD(),
-            new Constraints(SwerveConstants.kMagVelLimit, SwerveConstants.kMagVelLimit * 2)
+            SwerveConstants.kPresetPosXControlConstants.kP(),
+            SwerveConstants.kPresetPosXControlConstants.kI(),
+            SwerveConstants.kPresetPosXControlConstants.kD(),
+            new Constraints(SwerveConstants.kMagVelLimit, SwerveConstants.kMagVelLimit * 2.5)
         );
-        presetYController = new PIDController(
-            SwerveConstants.kPresetPosControlConstants.kP(),
-            SwerveConstants.kPresetPosControlConstants.kI(),
-            SwerveConstants.kPresetPosControlConstants.kD()
+        presetXController.setTolerance(0.01);
+        presetYController = new ProfiledPIDController(
+            SwerveConstants.kPresetPosYControlConstants.kP(),
+            SwerveConstants.kPresetPosYControlConstants.kI(),
+            SwerveConstants.kPresetPosYControlConstants.kD(),
+            new Constraints(SwerveConstants.kMagVelLimit, SwerveConstants.kMagVelLimit * 2.5)
         );
         presetYController.setTolerance(0.01);
+        presetRotController = new ProfiledPIDController(
+            SwerveConstants.kPresetRotControlConstants.kP(),
+            SwerveConstants.kPresetRotControlConstants.kI(),
+            SwerveConstants.kPresetRotControlConstants.kD(),
+            new Constraints(SwerveConstants.kRotVelLimit, SwerveConstants.kRotVelLimit * 2.5)
+        );
+        presetRotController.setTolerance(0.02);
+        presetRotController.enableContinuousInput(0, 2 * Math.PI);
 
         trajVXController = new PIDController(10, 0, 0);
         trajVYController = new PIDController(10, 0, 0);
@@ -156,11 +168,12 @@ public class SwerveDrive extends SubsystemBase {
         fieldZone = FieldZones.BLUE_CLOSE;
 
         desiredPresetPosition = PresetPositionType.NONE;
+        presetXEnabled = false;
 
         errorX = 10;
         errorY = 10;
         errorHeading = 1000;
-        reefAimed = false;
+        reefPresetted = false;
     }
 
     private void initAutoDashboards() {
@@ -172,9 +185,9 @@ public class SwerveDrive extends SubsystemBase {
         for(FieldZones zone : FieldZones.values()) {
             if(!zone.equals(FieldZones.OPPOSITE)) tempZoneViewerChooser.addOption(zone.name(), zone);
         }
-        Shuffleboard.getTab("Teleoperated").add(tempZoneViewerChooser)
+        Shuffleboard.getTab("Testing").add("Zone Viewer", tempZoneViewerChooser)
             .withWidget(BuiltInWidgets.kComboBoxChooser)
-            .withPosition(7, 3)
+            .withPosition(0, 0)
             .withSize(2, 1);
 
         ShuffleboardTab teleopTab = Shuffleboard.getTab("Teleoperated");
@@ -191,14 +204,14 @@ public class SwerveDrive extends SubsystemBase {
             .withPosition(3, 3)
             .withSize(1, 1);
         teleopTab.addNumber("xError", () -> errorX)
-            .withPosition(7, 1);
+            .withPosition(7, 0);
         teleopTab.addNumber("yError", () -> errorY)
-            .withPosition(8, 1);
+            .withPosition(8, 0);
         teleopTab.addNumber("headingError", () -> errorHeading)
-            .withPosition(7, 2)
+            .withPosition(9, 0)
             .withSize(1, 1);
-        teleopTab.addBoolean("reefAimed", () -> reefAimed)
-            .withPosition(8, 2)
+        teleopTab.addBoolean("reefPresetted", () -> reefPresetted)
+            .withPosition(8, 1)
             .withSize(1, 1);
         
         presetVisualizerField = new Field2d();
@@ -312,7 +325,7 @@ public class SwerveDrive extends SubsystemBase {
 
     public void toPresetRotation(ChassisSpeeds chassisSpeeds, Rotation2d heading, boolean fieldRelative, boolean optimize) {
         ChassisSpeeds desiredSpeeds = chassisSpeeds;
-        desiredSpeeds.omegaRadiansPerSecond = trajHeadingController.calculate(getPose().getRotation().getRadians(), heading.getRadians());
+        desiredSpeeds.omegaRadiansPerSecond = presetRotController.calculate(getPose().getRotation().getRadians(), heading.getRadians());
         injectPresetPosition(desiredSpeeds, fieldRelative, optimize);
     }
 
@@ -330,6 +343,11 @@ public class SwerveDrive extends SubsystemBase {
                 errorPose = errorPose.rotateAround(Translation2d.kZero, desiredPose.getRotation().unaryMinus());
                 Logger.recordOutput("Swerve/desiredPose", desiredPose);
                 Logger.recordOutput("Swerve/errorPose", errorPose);
+
+                double vxReefRelative = presetXController.calculate(errorPose.getX(), 0);
+                if(vxReefRelative > 0.4) vxReefRelative *= elevatorSpeedFactor; // TODO double check when higher kP
+                Logger.recordOutput("Swerve/vxReefRelative", vxReefRelative);
+
                 double vyReefRelative = presetYController.calculate(errorPose.getY(), 0);
                 if(vyReefRelative > 0.4) vyReefRelative *= elevatorSpeedFactor; // TODO double check when higher kP
                 Logger.recordOutput("Swerve/vyReefRelative", vyReefRelative);
@@ -338,8 +356,12 @@ public class SwerveDrive extends SubsystemBase {
                     (Constants.isRed() ? flipChassisSpeeds(chassisSpeeds) : chassisSpeeds) :
                     ChassisSpeeds.fromRobotRelativeSpeeds(chassisSpeeds, getPose().getRotation());
                 Logger.recordOutput("Swerve/fieldRelativeSpeedsNoFilter", fieldRelativeSpeeds);
+
                 ChassisSpeeds reefRelativeSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(fieldRelativeSpeeds, fieldZone.rotation());
+                Logger.recordOutput("Swerve/presetXEnabled", presetXEnabled);
+                if(presetXEnabled) reefRelativeSpeeds.vxMetersPerSecond = vxReefRelative;
                 reefRelativeSpeeds.vyMetersPerSecond = vyReefRelative;
+
                 fieldRelativeSpeeds = ChassisSpeeds.fromRobotRelativeSpeeds(reefRelativeSpeeds, fieldZone.rotation());
                 Logger.recordOutput("Swerve/fieldRelativeSpeedsReef", fieldRelativeSpeeds);
                 runChassisSpeeds(fieldRelativeSpeeds, true, optimize, true);
@@ -452,6 +474,10 @@ public class SwerveDrive extends SubsystemBase {
         return toX;
     }
 
+    public double getErrorDistance() {
+        return Math.hypot(errorX, errorY);
+    }
+
     // public Command runTestDrive() {
     //     return runOnce(() -> {
     //         SwerveModuleState testSwerveState = new SwerveModuleState(Preferences.getDouble("kSwerveTestDrive", SwerveConstants.kDefaultTestDrive),
@@ -511,9 +537,15 @@ public class SwerveDrive extends SubsystemBase {
             for(SDSSwerveModule module : modules) {
                 module.updateControlConstants();
             }
-            presetYController.setP(SwerveConstants.kPresetRotControlConstants.kP());
-            presetYController.setI(SwerveConstants.kPresetRotControlConstants.kI());
-            presetYController.setD(SwerveConstants.kPresetRotControlConstants.kD());
+            presetXController.setP(SwerveConstants.kPresetPosXControlConstants.kP());
+            presetXController.setI(SwerveConstants.kPresetPosXControlConstants.kI());
+            presetXController.setD(SwerveConstants.kPresetPosXControlConstants.kD());
+            presetYController.setP(SwerveConstants.kPresetPosXControlConstants.kP());
+            presetYController.setI(SwerveConstants.kPresetPosXControlConstants.kI());
+            presetYController.setD(SwerveConstants.kPresetPosXControlConstants.kD());
+            presetRotController.setP(SwerveConstants.kPresetRotControlConstants.kP());
+            presetRotController.setI(SwerveConstants.kPresetRotControlConstants.kI());
+            presetRotController.setD(SwerveConstants.kPresetRotControlConstants.kD());
             System.out.println("Swerve control constants updated");
         });
     }
@@ -541,6 +573,10 @@ public class SwerveDrive extends SubsystemBase {
                 desiredPresetPosition = type;
             }
         });
+    }
+
+    public Command runSetPresetXEnabled(boolean presetXEnabled) {
+        return runOnce(() -> this.presetXEnabled = presetXEnabled);
     }
 
     @AutoLogOutput(key = "Odometry/Pose")
@@ -685,7 +721,7 @@ public class SwerveDrive extends SubsystemBase {
                 errorX = errorPose.getX();
                 errorY = errorPose.getY();
                 errorHeading = errorPose.getRotation().getDegrees();
-                reefAimed = true;
+                reefPresetted = true;
             } else {
                 errorX = Math.abs(leftErrorPose.getX()) < Math.abs(rightErrorPose.getX()) ? leftErrorPose.getX() : rightErrorPose.getX();
                 errorY = Math.abs(leftErrorPose.getY()) < Math.abs(rightErrorPose.getY()) ? leftErrorPose.getY() : rightErrorPose.getY();
@@ -698,7 +734,7 @@ public class SwerveDrive extends SubsystemBase {
                     (Math.abs(rightErrorPose.getX()) < SwerveConstants.kReefAlignXTolerance &&
                     Math.abs(rightErrorPose.getY()) < SwerveConstants.kReefAlignYTolerance &&
                     Math.abs(leftErrorPose.getRotation().getDegrees()) < SwerveConstants.kReefAlignHeadingTolerance);
-                reefAimed = false;
+                reefPresetted = false;
             }
             Logger.recordOutput("Swerve/isAlignedErrorPoseLeft", leftErrorPose);
             Logger.recordOutput("Swerve/isAlignedErrorPoseRight", rightErrorPose);

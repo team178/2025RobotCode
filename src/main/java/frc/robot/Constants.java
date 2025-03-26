@@ -107,17 +107,27 @@ public class Constants {
 
 		public static final ControlConstants kPresetRotControlConstants = new ControlConstants(
 			"SwervePresetRot",
-			10,
+			7,
 			0,
-			1,
+			0.1,
 			0,
 			0,
 			0
 		);
 
-		public static final ControlConstants kPresetPosControlConstants = new ControlConstants(
+		public static final ControlConstants kPresetPosXControlConstants = new ControlConstants(
 			"SwervePresetPos",
-			2.5, // TODO probably turn up
+			10, // TODO probably turn up
+			0,
+			0.2,
+			0,
+			0,
+			0
+		);
+
+		public static final ControlConstants kPresetPosYControlConstants = new ControlConstants(
+			"SwervePresetPos",
+			10, // TODO probably turn up
 			0,
 			0,
 			0,
@@ -231,6 +241,7 @@ public class Constants {
 		public static final SparkMaxConfig elevatorLeaderConfig = new SparkMaxConfig();
 		public static final SparkMaxConfig elevatorFollowerConfig = new SparkMaxConfig();
 		public static final SparkMaxConfig effectorConfig = new SparkMaxConfig(); // also used for funnel motor, since is the same
+		public static final SparkMaxConfig dealgaeConfig = new SparkMaxConfig();
 		
 		static {
 			elevatorLeaderConfig
@@ -274,6 +285,15 @@ public class Constants {
                 .smartCurrentLimit(30)
                 .voltageCompensation(12)
             ; effectorConfig.encoder
+				.positionConversionFactor(1) // revolutions
+				.velocityConversionFactor(1) // RPM
+			;
+
+            dealgaeConfig
+                .idleMode(IdleMode.kCoast)
+                .smartCurrentLimit(30)
+                .voltageCompensation(12)
+            ; dealgaeConfig.encoder
 				.positionConversionFactor(1) // revolutions
 				.velocityConversionFactor(1) // RPM
 			;
@@ -381,8 +401,9 @@ public class Constants {
 		public static final Translation2d fieldCenter = new Translation2d(fieldWidth / 2, fieldHeight / 2);
 		public static final Transform2d betweenReefsTransform = new Transform2d(reefCenterRed.minus(reefCenterBlue), Rotation2d.kZero);
 
-		public static final Pose2d blueCloseLeftReef = new Pose2d(3.2512, fieldHeight / 2 + 0.164338, Rotation2d.kZero);
-	    public static final Pose2d blueCloseRightReef = new Pose2d(3.2512, fieldHeight / 2 - 0.164338, Rotation2d.kZero);
+		public static final double xOffsetIntoReef = 0.04;
+		public static final Pose2d blueCloseLeftReef = new Pose2d(3.2512 + xOffsetIntoReef, fieldHeight / 2 + 0.164338, Rotation2d.kZero);
+	    public static final Pose2d blueCloseRightReef = new Pose2d(3.2512 + xOffsetIntoReef, fieldHeight / 2 - 0.164338, Rotation2d.kZero);
 		public static final Pose2d redFarLeftReef = blueCloseLeftReef.plus(betweenReefsTransform);
 		public static final Pose2d redFarRightReef = blueCloseRightReef.plus(betweenReefsTransform);
 
