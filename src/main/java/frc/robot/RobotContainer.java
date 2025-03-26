@@ -173,12 +173,14 @@ public class RobotContainer {
             .addBoolean("Aligned Override", alignedOverrideCombo.getTrigger()).
             withPosition(3, 2)
             .withSize(1, 1);
+        elevator.setIsAlignedSupplier(swerve::isAligned);
 
         auxController.b().onTrue(elevator.runToElevatorPosition(ElevatorPosition.HOME));
         auxController.a().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L1));
         auxController.x().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L2));
         auxController.y().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L3));
         auxController.leftBumper().onTrue(elevator.runIntakeEffector(
+            // TODO slow to 4
             5, // effector volts
             -2, // funnel volts
             () -> swerve.isAligned() || alignedOverrideCombo.getTrigger().getAsBoolean() // is aligned supplier

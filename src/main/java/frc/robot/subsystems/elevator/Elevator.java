@@ -21,9 +21,12 @@ public class Elevator extends SubsystemBase {
     private boolean intaking;
     private boolean bouncing;
 
+    private double desiredLeftVolts;
+    private double desiredRightVolts;
     private double desiredFunnelVolts;
     private double lastUpperPhotosensorTrigger;
 
+    private BooleanSupplier isAlignedSupplier;
     private boolean dealgaeRunning;
 
     public Elevator(ElevatorIO io) {
@@ -33,6 +36,8 @@ public class Elevator extends SubsystemBase {
         intaking = false;
         bouncing = true;
         dealgaeRunning = false;
+        desiredLeftVolts = 0;
+        desiredRightVolts = 0;
         desiredFunnelVolts = 0;
         Preferences.initDouble("ele/leftvolts", 0);
         Preferences.initDouble("ele/rightvolts", 0);
@@ -62,6 +67,10 @@ public class Elevator extends SubsystemBase {
             .withSize(1, 1);
     }
 
+    public void setIsAlignedSupplier(BooleanSupplier isAlignedSupplier) {
+        this.isAlignedSupplier = isAlignedSupplier;
+    }
+
     public Command runElevatorOpenLoop(double volts) {
         return runOnce(() -> {
             openLoop = true;
@@ -81,7 +90,9 @@ public class Elevator extends SubsystemBase {
         return runOnce(() -> {
             openLoop = false;
             if(intaking) {
-                elevatorIO.setEffectorVolts(0, 0);
+                desiredLeftVolts = 0;
+                desiredRightVolts = 0;
+                // elevatorIO.setEffectorVolts(0, 0);
                 // elevatorIO.setFunnelMotorVolts(0);
                 desiredFunnelVolts = 0;
                 intaking = false;
@@ -106,15 +117,27 @@ public class Elevator extends SubsystemBase {
     }
 
     public Command runEffector(double left, double right) {
-        return runOnce(() -> elevatorIO.setEffectorVolts(left, right));
+        return runOnce(() -> {
+            desiredLeftVolts = left;
+            desiredRightVolts = right;
+            // elevatorIO.setEffectorVolts(left, right);
+        });
     }
 
     public Command runEffectorPreferences() {
-        return runOnce(() -> elevatorIO.setEffectorVolts(Preferences.getDouble("ele/leftvolts", 0), Preferences.getDouble("ele/rightvolts", 0)));
+        return runOnce(() -> {
+            desiredLeftVolts = Preferences.getDouble("ele/leftvolts", 0);
+            desiredRightVolts = Preferences.getDouble("ele/rightvolts", 0);
+            // elevatorIO.setEffectorVolts(Preferences.getDouble("ele/leftvolts", 0), Preferences.getDouble("ele/rightvolts", 0));
+        });
     }
 
     public Command runaEffectorPreferences() {
-        return runOnce(() -> elevatorIO.setEffectorVolts(-Preferences.getDouble("ele/leftvolts", 0), -Preferences.getDouble("ele/rightvolts", 0)));
+        return runOnce(() -> {
+            desiredLeftVolts = -Preferences.getDouble("ele/leftvolts", 0);
+            desiredRightVolts = -Preferences.getDouble("ele/rightvolts", 0);
+            // elevatorIO.setEffectorVolts(-Preferences.getDouble("ele/leftvolts", 0), -Preferences.getDouble("ele/rightvolts", 0));
+        });
     }
 
     public Command runSetFunnelVolts(double volts) {
@@ -167,6 +190,30 @@ public class Elevator extends SubsystemBase {
                 elevatorIO.setElevatorPosition(ElevatorPosition.HOME.height + (0.005 * Math.sin(Timer.getFPGATimestamp() * 12)));
             } else elevatorIO.setElevatorPosition(elevatorIOInputs.desiredHeight);
             // elevatorIO.setElevatorPosition(elevatorIOInputs.desiredPosition);
+        }
+
+        double realDesiredHeight = Math.max(Math.min(elevatorIOInputs.desiredHeight, 0.612), 0);
+        if(desiredLeftVolts == 0) {
+            elevatorIO.setLeftEffectorVolts(desiredLeftVolts);
+        } else if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) ||
+            (Math.abs(realDesiredHeight - elevatorIOInputs.elevatorHeight) < 0.0015 &&
+            (isAlignedSupplier == null || isAlignedSupplier.getAsBoolean())
+            )
+        ) {
+            elevatorIO.setLeftEffectorVolts(desiredLeftVolts);
+        } else {
+            elevatorIO.setLeftEffectorVolts(0);
+        }
+        if(desiredRightVolts == 0) {
+            elevatorIO.setRightEffectorVolts(desiredRightVolts);
+        } else if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) ||
+            (Math.abs(realDesiredHeight - elevatorIOInputs.elevatorHeight) < 0.0015 &&
+            (isAlignedSupplier == null || isAlignedSupplier.getAsBoolean())
+            )
+        ) {
+            elevatorIO.setRightEffectorVolts(desiredRightVolts);
+        } else {
+            elevatorIO.setRightEffectorVolts(0);
         }
 
         if(elevatorIOInputs.upperPhotosensor) {
@@ -230,7 +277,9 @@ public class Elevator extends SubsystemBase {
         return runOnce(() -> {
             if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) && intaking) {
                 intaking = false;
-                elevatorIO.setEffectorVolts(0, 0);
+                desiredLeftVolts = 0;
+                desiredRightVolts = 0;
+                // elevatorIO.setEffectorVolts(0, 0);
                 // elevatorIO.setFunnelMotorVolts(0);
                 desiredFunnelVolts = 0;
             } else {
@@ -238,14 +287,20 @@ public class Elevator extends SubsystemBase {
                     intaking = true;
                     // elevatorIO.setFunnelMotorVolts(funnelVolts);
                     desiredFunnelVolts = funnelVolts;
-                    elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
+                    desiredLeftVolts = -effectorVolts;
+                    desiredRightVolts = effectorVolts;
+                    // elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
                 } else if(isAlignedSupplier.getAsBoolean()) {
                 // TODO make it hold down still work
                 // } else if(isAlignedSupplier.getAsBoolean() && Math.abs(elevatorIOInputs.elevatorHeight - elevatorIOInputs.desiredHeight) < 0.0015) {
                     if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1)) {
-                        elevatorIO.setEffectorVolts(-effectorVolts * 6 / 7, effectorVolts * 3 / 7); // over 5 to over 7
+                        desiredLeftVolts = -effectorVolts * 6 / 7;
+                        desiredRightVolts = effectorVolts * 3 / 7;
+                        // elevatorIO.setEffectorVolts(-effectorVolts * 6 / 7, effectorVolts * 3 / 7); // over 5 to over 7
                     } else {
-                        elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
+                        desiredLeftVolts = -effectorVolts;
+                        desiredRightVolts = effectorVolts;
+                        // elevatorIO.setEffectorVolts(-effectorVolts, effectorVolts);
                     }
                 }
             }
@@ -254,7 +309,11 @@ public class Elevator extends SubsystemBase {
 
     public Command runStopIntakeEffector() {
         return runOnce(() -> {
-            if(!intaking) elevatorIO.setEffectorVolts(0, 0);
+            if(!intaking) {
+                desiredLeftVolts = 0;
+                desiredRightVolts = 0;
+                // elevatorIO.setEffectorVolts(0, 0);
+            }
         }).andThen(runWaitStopIntake());
     }
 
