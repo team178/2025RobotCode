@@ -21,7 +21,6 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.WaitCommand;
 import frc.robot.Constants;
 import frc.robot.Constants.FieldConstants;
 import frc.robot.subsystems.elevator.Elevator;
@@ -36,7 +35,7 @@ public class Autos {
     private static GenericEntry autoStringFormEntry;
     public static final Field2d startingPositionVisualizerField = new Field2d();
 
-    private static final double preemptiveElevatorInterval = 0.1; // seconds before reaching target for raising elevator (currently no delay implemented before preemptive *intake*)
+    // private static final double preemptiveElevatorInterval = 0.2; // seconds before reaching target for raising elevator (currently no delay implemented before preemptive *intake*)
     private static final double elevatorAllowMovementTolerance = 0.0015; // meters above home tolerated before allowing movement
     private static final double elevatorAllowEjectTolerance = 0.0015; // meters above home tolerated before allowing score coral
 
@@ -303,28 +302,25 @@ public class Autos {
                             break;
                         case "1":
                             autoCommand = autoCommand
-                                .andThen(followTrajectory.alongWith(
-                                    new WaitCommand(Math.max(trajectory.getTotalTime() - preemptiveElevatorInterval, 0))
-                                        .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L1, elevatorAllowEjectTolerance))
-                                )).andThen(elevator.runEjectScore())
+                                .andThen(followTrajectory)
+                                .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L1, elevatorAllowEjectTolerance))
+                                .andThen(elevator.runEjectScore())
                                 .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
                             i++;
                             break;
                         case "2":
                             autoCommand = autoCommand
-                                .andThen(followTrajectory.alongWith(
-                                    new WaitCommand(Math.max(trajectory.getTotalTime() - preemptiveElevatorInterval, 0))
-                                        .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L2, elevatorAllowEjectTolerance))
-                                )).andThen(elevator.runEjectScore())
+                                .andThen(followTrajectory)
+                                .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L2, elevatorAllowEjectTolerance))
+                                .andThen(elevator.runEjectScore())
                                 .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
                             i++;
                             break;
                         case "3":
                             autoCommand = autoCommand
-                                .andThen(followTrajectory.alongWith(
-                                    new WaitCommand(Math.max(trajectory.getTotalTime() - preemptiveElevatorInterval, 0))
-                                        .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L3, elevatorAllowEjectTolerance))
-                                )).andThen(elevator.runEjectScore())
+                                .andThen(followTrajectory)
+                                .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L3, elevatorAllowEjectTolerance))
+                                .andThen(elevator.runEjectScore())
                                 .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
                             i++;
                             break;
