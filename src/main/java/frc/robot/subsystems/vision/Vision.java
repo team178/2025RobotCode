@@ -1,16 +1,20 @@
 package frc.robot.subsystems.vision;
 
+import java.util.HashMap;
+
 import org.littletonrobotics.junction.Logger;
 
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.HttpCamera;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Alert;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.Alert.AlertType;
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
+import edu.wpi.first.wpilibj.shuffleboard.ShuffleboardTab;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Vision extends SubsystemBase {
@@ -29,6 +33,23 @@ public class Vision extends SubsystemBase {
                 new Alert("Vision module " + ios[i].getLimelightLocation().name + " disconnected.", AlertType.kWarning)
             );
         }
+
+        ShuffleboardTab teleopTab = Shuffleboard.getTab("Teleoperated");
+        HttpCamera frontCameraStream = new HttpCamera("Front", "http://10.1.78:5800");
+        HttpCamera highCameraStream = new HttpCamera("High", "http://10.1.78:5810");
+        CameraServer.addCamera(frontCameraStream);
+        CameraServer.addCamera(highCameraStream);
+        CameraServer.startAutomaticCapture();
+        HashMap<String, Object> cameraProperties = new HashMap<>();
+        cameraProperties.put("Show controls", false);
+        teleopTab.add(frontCameraStream)
+            .withPosition(5, 0)
+            .withSize(3, 2)
+            .withProperties(cameraProperties);
+        teleopTab.add(highCameraStream)
+            .withPosition(5, 2)
+            .withSize(3, 2)
+            .withProperties(cameraProperties);
     }
 
     @Override

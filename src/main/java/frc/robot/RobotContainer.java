@@ -101,7 +101,7 @@ public class RobotContainer {
         overrideElevatorFactorCombo.getTrigger().onTrue(Commands.runOnce(() -> {}));
         Shuffleboard.getTab("Teleoperated")
             .addBoolean("EleFact Override", overrideElevatorFactorCombo.getTrigger())
-            .withPosition(8, 2)
+            .withPosition(1, 3)
             .withSize(1, 1);
 
         swerve.setToAimSuppliers(
@@ -171,7 +171,7 @@ public class RobotContainer {
         alignedOverrideCombo.getTrigger().onTrue(Commands.run(() -> {}));
         Shuffleboard.getTab("Teleoperated")
             .addBoolean("Aligned Override", alignedOverrideCombo.getTrigger()).
-            withPosition(3, 2)
+            withPosition(8, 2)
             .withSize(1, 1);
         elevator.setIsAlignedSupplier(() -> swerve.isAligned() || alignedOverrideCombo.getTrigger().getAsBoolean());
         elevator.setScoreComboSupplier(auxController.rightTrigger());

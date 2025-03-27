@@ -191,27 +191,27 @@ public class SwerveDrive extends SubsystemBase {
 
         ShuffleboardTab teleopTab = Shuffleboard.getTab("Teleoperated");
         teleopTab.addBoolean("toX", () -> toX)
-            .withPosition(2, 3)
+            .withPosition(0, 3)
             .withSize(1, 1);
-        teleopTab.addString("Field Zone", () -> fieldZone.name())
-            .withPosition(0, 1)
-            .withSize(2, 1);
-        teleopTab.addString("Desired Preset Position", () -> desiredPresetPosition.name())
+        teleopTab.addString("Field Zone + Preset Pos", () -> fieldZone.name() + " " + desiredPresetPosition.name())
             .withPosition(0, 0)
             .withSize(2, 1);
+        // teleopTab.addString("Desired Preset Position", () -> desiredPresetPosition.name())
+        //     .withPosition(0, 0)
+        //     .withSize(2, 1);
         teleopTab.addBoolean("Aligned", this::isAligned)
-            .withPosition(3, 3)
+            .withPosition(1, 2)
             .withSize(1, 1);
         teleopTab.addNumber("xError", () -> errorX)
-            .withPosition(7, 0);
+            .withPosition(0, 1);
         teleopTab.addNumber("yError", () -> errorY)
-            .withPosition(8, 0);
+            .withPosition(1, 1);
         teleopTab.addNumber("headingError", () -> errorHeading)
-            .withPosition(9, 0)
+            .withPosition(0, 2)
             .withSize(1, 1);
-        teleopTab.addBoolean("reefPresetted", () -> reefPresetted)
-            .withPosition(8, 1)
-            .withSize(1, 1);
+        // teleopTab.addBoolean("reefPresetted", () -> reefPresetted)
+        //     .withPosition(8, 1)
+        //     .withSize(1, 1);
         
         presetVisualizerField = new Field2d();
         odometryField = new Field2d();
@@ -220,10 +220,10 @@ public class SwerveDrive extends SubsystemBase {
         odometryField.setRobotPose(new Pose2d());
 
         teleopTab.add("Desired Preset Pose", presetVisualizerField)
-            .withPosition(4, 2)
+            .withPosition(2, 2)
             .withSize(3, 2);
         teleopTab.add("Odometry Pose", odometryField)
-            .withPosition(4, 0)
+            .withPosition(2, 0)
             .withSize(3, 2);
     }
 

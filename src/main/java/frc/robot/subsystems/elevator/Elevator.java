@@ -56,28 +56,36 @@ public class Elevator extends SubsystemBase {
 
         ShuffleboardTab teleopTab = Shuffleboard.getTab("Teleoperated");
         teleopTab.addBoolean("Low Photo", () -> elevatorIOInputs.lowerPhotosensor)
-            .withPosition(2, 1)
+            .withPosition(9, 2)
             .withSize(1, 1);
         teleopTab.addBoolean("Up Photo", () -> elevatorIOInputs.upperPhotosensor)
-            .withPosition(2, 0)
+            .withPosition(9, 1)
             .withSize(1, 1);
-        teleopTab.addBoolean("Low Limit", () -> elevatorIOInputs.lowLimit)
-            .withPosition(3, 1)
+        // teleopTab.addBoolean("Low Limit", () -> elevatorIOInputs.lowLimit)
+        //     .withPosition(3, 1)
+        //     .withSize(1, 1);
+        // teleopTab.addBoolean("High Limit", () -> elevatorIOInputs.highLimit)
+        //     .withPosition(3, 0)
+        //     .withSize(1, 1);
+        teleopTab.addString("Limit Switches", () ->
+            (Timer.getFPGATimestamp() % 1 > 0.5 ? "\\ " : "/ ") + 
+            (elevatorIOInputs.lowerPhotosensor ?
+            (elevatorIOInputs.upperPhotosensor ? "Both" : "Low") :
+            (elevatorIOInputs.lowerPhotosensor ? "High" : "None")) +
+            (Timer.getFPGATimestamp() % 1 > 0.5 ? " /" : " \\"))
+            .withPosition(8, 1)
             .withSize(1, 1);
-        teleopTab.addBoolean("High Limit", () -> elevatorIOInputs.highLimit)
-            .withPosition(3, 0)
-            .withSize(1, 1);
-        teleopTab.addString("Elevator Position", () -> elevatorIOInputs.desiredPosition.name)
-            .withPosition(0, 2)
+        teleopTab.addString("Elevator Position", () -> elevatorIOInputs.desiredPosition.name + (intaking ? " + Intaking" : ""))
+            .withPosition(8, 0)
             .withSize(2, 1);
-        teleopTab.addBoolean("\"Intaking\"", () -> intaking)
-            .withPosition(2, 2)
-            .withSize(1, 1);
-        teleopTab.addBoolean("Home Bounce", () -> bouncing)
-            .withPosition(7, 2)
+        // teleopTab.addBoolean("\"Intaking\"", () -> intaking)
+        //     .withPosition(2, 2)
+        //     .withSize(1, 1);
+        teleopTab.addBoolean("Bouncing", () -> bouncing)
+            .withPosition(9, 3)
             .withSize(1, 1);
         teleopTab.addBoolean("Awaiting Home", () -> awaitingScoreCombo)
-            .withPosition(7, 1)
+            .withPosition(8, 3)
             .withSize(1, 1);
     }
 

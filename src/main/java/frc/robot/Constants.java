@@ -41,14 +41,14 @@ public class Constants {
 	public static final SendableChooser<FieldType> kFieldType = new SendableChooser<>();
 
 	static {
-		kFieldType.setDefaultOption("AndyMark Field", FieldType.ANDYMARK);
-		kFieldType.addOption("Welded Field", FieldType.WELDED);
+		kFieldType.setDefaultOption("AndyMark", FieldType.ANDYMARK);
+		kFieldType.addOption("Welded", FieldType.WELDED);
 
-		Shuffleboard.getTab("Teleoperated")
+		Shuffleboard.getTab("Testing")
 			.add("Field Type", kFieldType)
 			.withWidget(BuiltInWidgets.kComboBoxChooser)
 			.withSize(2, 1)
-			.withPosition(0, 3);
+			.withPosition(0, 1);
 	}
 
 	/** 
