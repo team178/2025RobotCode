@@ -76,7 +76,7 @@ public class ElevatorIOSpark implements ElevatorIO {
         leftEffectorMotor.configure(ElevatorConstants.effectorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         rightEffectorMotor.configure(ElevatorConstants.effectorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
         funnelMotor.configure(ElevatorConstants.effectorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
-        dealgaeMotor.configure(ElevatorConstants.effectorConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        dealgaeMotor.configure(ElevatorConstants.dealgaeConfig, ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
         highLimit = new DigitalInput(ElevatorConstants.kHighLimitDIO);
         lowLimit = new DigitalInput(ElevatorConstants.kLowLimitDIO);

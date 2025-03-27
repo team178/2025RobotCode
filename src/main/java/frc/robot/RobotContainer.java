@@ -100,8 +100,8 @@ public class RobotContainer {
         );
         overrideElevatorFactorCombo.getTrigger().onTrue(Commands.runOnce(() -> {}));
         Shuffleboard.getTab("Teleoperated")
-            .addBoolean("EleFact Override", overrideElevatorFactorCombo.getTrigger()).
-            withPosition(8, 0)
+            .addBoolean("EleFact Override", overrideElevatorFactorCombo.getTrigger())
+            .withPosition(8, 2)
             .withSize(1, 1);
 
         swerve.setToAimSuppliers(
@@ -155,7 +155,7 @@ public class RobotContainer {
 
         // driverController.povUp().onTrue(elevator.runEffectorPreferences());
         // driverController.povUp().onFalse(elevator.runEffector(0, 0));
-        // driverController.povDown().onTrue(elevator.runaEffectorPreferences());
+        // driverController.povDown().onTrue(elevator.runReversedEffectorPreferences());
         // driverController.povDown().onFalse(elevator.runEffector(0, 0));
 
         // driverController.povLeft().onTrue(elevator.runElevatorOpenLoopPreferences());
@@ -173,7 +173,9 @@ public class RobotContainer {
             .addBoolean("Aligned Override", alignedOverrideCombo.getTrigger()).
             withPosition(3, 2)
             .withSize(1, 1);
-        elevator.setIsAlignedSupplier(swerve::isAligned);
+        elevator.setIsAlignedSupplier(() -> swerve.isAligned() || alignedOverrideCombo.getTrigger().getAsBoolean());
+        elevator.setScoreComboSupplier(auxController.rightTrigger());
+        elevator.setErrorDistanceSupplier(swerve::getErrorDistance);
 
         auxController.b().onTrue(elevator.runToElevatorPosition(ElevatorPosition.HOME));
         auxController.a().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L1));
@@ -181,10 +183,8 @@ public class RobotContainer {
         auxController.y().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L3));
         auxController.leftBumper().onTrue(elevator.runIntakeEffector(
             // TODO slow to 4
-            5, // effector volts
-            -2, // funnel volts
-            () -> swerve.isAligned() || alignedOverrideCombo.getTrigger().getAsBoolean() // is aligned supplier
-            // () -> true
+            4, // effector volts
+            -2 // funnel volts
         ));
         auxController.leftBumper().onFalse(elevator.runStopIntakeEffector());
 
