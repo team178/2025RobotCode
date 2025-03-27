@@ -705,6 +705,8 @@ public class SwerveDrive extends SubsystemBase {
                 getPose().getY() - fieldZone.rightReefPose.getY(),
                 getPose().getRotation().minus(fieldZone.rightReefPose.getRotation())
             );
+            leftErrorPose.rotateAround(Translation2d.kZero, fieldZone.leftReefPose.getRotation().unaryMinus());
+            rightErrorPose.rotateAround(Translation2d.kZero, fieldZone.rightReefPose.getRotation().unaryMinus());
             if(desiredPresetPosition.equals(PresetPositionType.LEFTREEF) || desiredPresetPosition.equals(PresetPositionType.RIGHTREEF)) {
                 Pose2d desiredPose = desiredPresetPosition.equals(PresetPositionType.LEFTREEF) ? fieldZone.leftReefPose : fieldZone.rightReefPose;
                 Pose2d errorPose = new Pose2d(
@@ -712,6 +714,7 @@ public class SwerveDrive extends SubsystemBase {
                     getPose().getY() - desiredPose.getY(),
                     getPose().getRotation().minus(desiredPose.getRotation())
                 );
+                errorPose.rotateAround(Translation2d.kZero, desiredPose.getRotation());
                 isAligned =
                     Math.abs(errorPose.getX()) < SwerveConstants.kReefAlignXTolerance &&
                     Math.abs(errorPose.getY()) < SwerveConstants.kReefAlignYTolerance &&
@@ -773,7 +776,7 @@ public class SwerveDrive extends SubsystemBase {
                 };
                 presetY = Constants.isRed() ? FieldConstants.fieldHeight - Units.inchesToMeters(16) : Units.inchesToMeters(16);
             case CORALSTATION:
-                // TODO add
+                // not implementing for competition
             default:
                 break;
         }

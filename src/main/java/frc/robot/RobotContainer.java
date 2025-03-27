@@ -106,7 +106,7 @@ public class RobotContainer {
 
         swerve.setToAimSuppliers(
             driverController.leftTrigger(), // aim reef
-            driverController.b(), // aim processor
+            () -> false, // aim processor, disabled
             driverController.a() // aim station
         );
         swerve.setReefChooserSuppliers(
@@ -128,7 +128,7 @@ public class RobotContainer {
         driverController.b().onTrue(swerve.runUpdateControlConstants().andThen(elevator.runUpdateControlConstants()));
         driverController.povLeft().onTrue(swerve.runTogglePresetPosition(PresetPositionType.LEFTREEF));
         driverController.povRight().onTrue(swerve.runTogglePresetPosition(PresetPositionType.RIGHTREEF));
-        driverController.povUp().onTrue(swerve.runTogglePresetPosition(PresetPositionType.PROCESSOR));
+        // driverController.povUp().onTrue(swerve.runTogglePresetPosition(PresetPositionType.PROCESSOR));
         driverController.leftBumper().onTrue(swerve.runSetPresetXEnabled(true));
         driverController.leftBumper().onFalse(swerve.runSetPresetXEnabled(false));
 
