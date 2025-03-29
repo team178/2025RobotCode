@@ -5,6 +5,7 @@ import java.util.function.DoubleSupplier;
 
 import org.littletonrobotics.junction.Logger;
 
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
@@ -218,9 +219,21 @@ public class Elevator extends SubsystemBase {
     }
 
     public Command runEjectScore() {
-        return (!elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1) ? runEffector(-4, 4) : runEffector(-6, 3))
+        return Commands.print("start eject")
+        .andThen(runOnce(() -> {
+            if(!elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1)) {
+                desiredLeftVolts = -4;
+                desiredRightVolts = 4;
+            } else {
+                desiredLeftVolts = -6;
+                desiredRightVolts = 3;
+            }
+        }))
+            // (!elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1)) ? (runEffector(-4, 4)) : (runEffector(-6, 3)))
+        .andThen(Commands.print("please please please again " + desiredLeftVolts + " " + desiredRightVolts))
             .andThen(new WaitUntilCommand(() -> !getLowerPhotosensor()))
             .andThen(new WaitCommand(0.1)) // TODO may want to look at tweaking the time here
+            .andThen(Commands.print("uh oh stop " + desiredLeftVolts + " " + desiredRightVolts))
             .andThen(runEffector(0, 0))
             .andThen(runToElevatorPosition(ElevatorPosition.HOME));
     }
@@ -329,10 +342,10 @@ public class Elevator extends SubsystemBase {
         double realDesiredHeight = Math.max(Math.min(elevatorIOInputs.desiredHeight, 0.612), 0);
         if(desiredLeftVolts == 0) {
             elevatorIO.setLeftEffectorVolts(desiredLeftVolts);
-        } else if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) ||
+        } else if((elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) ||
             (Math.abs(realDesiredHeight - elevatorIOInputs.elevatorHeight) < 0.0015 &&
             (isAlignedSupplier == null || isAlignedSupplier.getAsBoolean())
-            )
+            )) || DriverStation.isAutonomous()
         ) {
             elevatorIO.setLeftEffectorVolts(desiredLeftVolts);
         } else {
@@ -340,10 +353,10 @@ public class Elevator extends SubsystemBase {
         }
         if(desiredRightVolts == 0) {
             elevatorIO.setRightEffectorVolts(desiredRightVolts);
-        } else if(elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) ||
+        } else if((elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) ||
             (Math.abs(realDesiredHeight - elevatorIOInputs.elevatorHeight) < 0.0015 &&
             (isAlignedSupplier == null || isAlignedSupplier.getAsBoolean())
-            )
+            )) || DriverStation.isAutonomous()
         ) {
             elevatorIO.setRightEffectorVolts(desiredRightVolts);
         } else {

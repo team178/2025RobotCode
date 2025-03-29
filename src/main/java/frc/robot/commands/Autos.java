@@ -257,6 +257,7 @@ public class Autos {
                 case "1":
                     autoCommand = autoCommand
                         .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L1, elevatorAllowEjectTolerance))
+                        .andThen(Commands.print("please please please"))
                         .andThen(elevator.runEjectScore())
                         .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
                     System.out.println("That's a weird auto routine... index " + i);
@@ -264,6 +265,7 @@ public class Autos {
                 case "2":
                     autoCommand = autoCommand
                         .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L2, elevatorAllowEjectTolerance))
+                        .andThen(Commands.print("please please please"))
                         .andThen(elevator.runEjectScore())
                         .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
                     System.out.println("That's a weird auto routine... index " + i);
@@ -271,6 +273,7 @@ public class Autos {
                 case "3":
                     autoCommand = autoCommand
                         .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L3, elevatorAllowEjectTolerance))
+                        .andThen(Commands.print("please please please"))
                         .andThen(elevator.runEjectScore())
                         .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
                     System.out.println("That's a weird auto routine... index " + i);
