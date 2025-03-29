@@ -465,6 +465,10 @@ public class SwerveDrive extends SubsystemBase {
         runChassisSpeeds(speeds, true, true, true);
     }
 
+    public void turnOffPreset() {
+        desiredPresetPosition = PresetPositionType.NONE;
+    }
+
     public void setPose(Pose2d pose) {
         poseEstimator.resetPosition(rawGyroRotation, modulePositions, pose);
     }

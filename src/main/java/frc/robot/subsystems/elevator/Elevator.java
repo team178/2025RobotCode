@@ -24,6 +24,8 @@ public class Elevator extends SubsystemBase {
     private boolean intaking;
     private boolean ejecting;
     private boolean bouncing;
+    private boolean storedCoral;
+    private Runnable offPresetRun;
 
     private double desiredLeftVolts;
     private double desiredRightVolts;
@@ -101,6 +103,10 @@ public class Elevator extends SubsystemBase {
     
     public void setErrorDistanceSupplier(DoubleSupplier errorDistanceSupplier) {
         this.errorDistanceSupplier = errorDistanceSupplier;
+    }
+
+    public void setOffPresetRun(Runnable offPresetRun) {
+        this.offPresetRun = offPresetRun;
     }
 
     public Command runElevatorOpenLoop(double volts) {
@@ -395,6 +401,13 @@ public class Elevator extends SubsystemBase {
             elevatorIO.setElevatorPosition(ElevatorPosition.HOME);
         }
 
+        if(storedCoral != hasCoral()) {
+            storedCoral = !storedCoral;
+            if(offPresetRun != null && !storedCoral) {
+                offPresetRun.run();
+            }
+        }
+
         Logger.recordOutput("Elevator/intaking", intaking);
         Logger.recordOutput("Elevator/bouncing", bouncing);
         Logger.recordOutput("Elevator/subdesiredLeftVolts", desiredLeftVolts);
@@ -404,5 +417,6 @@ public class Elevator extends SubsystemBase {
         Logger.recordOutput("Elevator/lastLowerPhotosensorTrigger", lastLowerPhotosensorTrigger);
         Logger.recordOutput("Elevator/awaitingScoreCombo", awaitingScoreCombo);
         Logger.recordOutput("Elevator/dealgaeRunning", dealgaeRunning);
+        Logger.recordOutput("Elevator/storedCoral", storedCoral);
     }
  }

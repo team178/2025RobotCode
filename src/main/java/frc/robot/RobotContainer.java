@@ -176,6 +176,7 @@ public class RobotContainer {
         elevator.setIsAlignedSupplier(() -> swerve.isAligned() || alignedOverrideCombo.getTrigger().getAsBoolean());
         elevator.setScoreComboSupplier(auxController.rightTrigger());
         elevator.setErrorDistanceSupplier(swerve::getErrorDistance);
+        elevator.setOffPresetRun(swerve::turnOffPreset);
 
         auxController.b().onTrue(elevator.runToElevatorPosition(ElevatorPosition.HOME));
         auxController.a().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L1));
