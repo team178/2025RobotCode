@@ -65,7 +65,7 @@ public class RobotContainer {
                 );
                 elevator = new Elevator(new ElevatorIOSpark());
                 // manipulator = new Manipulator(new ManipulatorIOSpark());
-                climber = new Climber(new ClimberIOSpark());
+                // climber = new Climber(new ClimberIOSpark());
                 vision = new Vision(
                     swerve::addVisionMeasurement
                     , new VisionIOLimelight(LimelightLocations.FRONT3, () -> swerve.getPose().getRotation())
@@ -82,7 +82,7 @@ public class RobotContainer {
                     new SDSModuleIO() {});
                 elevator = new Elevator(new ElevatorIO() {});
                 // manipulator = new Manipulator(new ManipulatorIO() {});
-                climber = new Climber(new ClimberIO() {});
+                // climber = new Climber(new ClimberIO() {});
                 // vision = new Vision((pose, timestamp, stdDevs) -> {}, new VisionIO() {});
                 break;
         }
@@ -178,10 +178,10 @@ public class RobotContainer {
         elevator.setErrorDistanceSupplier(swerve::getErrorDistance);
         elevator.setOffPresetRun(swerve::turnOffPreset);
 
-        auxController.b().onTrue(elevator.runToElevatorPosition(ElevatorPosition.HOME));
-        auxController.a().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L1));
-        auxController.x().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L2));
-        auxController.y().onTrue(elevator.runToElevatorPosition(ElevatorPosition.L3));
+        auxController.b().onTrue(elevator.runTeleopToElevatorPosition(ElevatorPosition.HOME));
+        auxController.a().onTrue(elevator.runTeleopToElevatorPosition(ElevatorPosition.L1));
+        auxController.x().onTrue(elevator.runTeleopToElevatorPosition(ElevatorPosition.L2));
+        auxController.y().onTrue(elevator.runTeleopToElevatorPosition(ElevatorPosition.L3));
         auxController.leftBumper().onTrue(elevator.runIntakeEffector(
             // TODO slow to 4
             4, // effector volts
@@ -207,10 +207,10 @@ public class RobotContainer {
 
         auxController.rightBumper().onTrue(elevator.runToggleBouncing());
 
-        auxController.rightBumper().onTrue(climber.runSetClimberVolts(10));
-        auxController.rightBumper().onFalse(climber.runSetClimberVolts(0));
-        auxController.rightTrigger().onTrue(climber.runSetClimberVolts(-10));
-        auxController.rightTrigger().onFalse(climber.runSetClimberVolts(0));
+        // auxController.rightBumper().onTrue(climber.runSetClimberVolts(10));
+        // auxController.rightBumper().onFalse(climber.runSetClimberVolts(0));
+        // auxController.rightTrigger().onTrue(climber.runSetClimberVolts(-10));
+        // auxController.rightTrigger().onFalse(climber.runSetClimberVolts(0));
 
         // auxController.a().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.HOME));
         // auxController.b().onTrue(manipulator.runSetManipulatorPosition(ManipulatorPosition.INTAKE));

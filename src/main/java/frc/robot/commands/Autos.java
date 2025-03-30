@@ -242,7 +242,32 @@ public class Autos {
         }
 
         Trajectory<SwerveSample> startingTrajectory = blueTrajectories.get(startingPositionChooser.getSelected().fileKey + rawAutoString.substring(0, 1));
-        if(startingTrajectory == null) return resetPoseCommand.andThen(Commands.print("Starting trajectory not found"));
+        if(startingTrajectory == null) {
+            String character = rawAutoString.substring(0, 1);
+            System.out.println("No trajectory found, trying to find elevator only auto for testing purposes");
+            switch(character) {
+                case "0":
+                    return resetPoseCommand
+                        .andThen(elevator.runIntakeFromCoralStation());
+                case "1":
+                    return resetPoseCommand
+                        .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L1, elevatorAllowEjectTolerance))
+                        .andThen(elevator.runEjectScore())
+                        .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
+                case "2":
+                    return resetPoseCommand
+                        .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L2, elevatorAllowEjectTolerance))
+                        .andThen(elevator.runEjectScore())
+                        .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
+                case "3":
+                    return resetPoseCommand
+                        .andThen(elevator.runWaitToElevatorPositionDealgae(ElevatorPosition.L2, ElevatorPosition.L3, elevatorAllowEjectTolerance))
+                        .andThen(elevator.runEjectScore())
+                        .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
+                default:
+                    return resetPoseCommand.andThen(Commands.print("Starting trajectory and elevator auto not found"));
+            }
+        }
         Command autoCommand = new FollowTrajectory(swerve, startingTrajectory);
         String previousPosition = rawAutoString.substring(0, 1);
 
@@ -257,7 +282,6 @@ public class Autos {
                 case "1":
                     autoCommand = autoCommand
                         .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L1, elevatorAllowEjectTolerance))
-                        .andThen(Commands.print("please please please"))
                         .andThen(elevator.runEjectScore())
                         .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
                     System.out.println("That's a weird auto routine... index " + i);
@@ -265,15 +289,14 @@ public class Autos {
                 case "2":
                     autoCommand = autoCommand
                         .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L2, elevatorAllowEjectTolerance))
-                        .andThen(Commands.print("please please please"))
                         .andThen(elevator.runEjectScore())
                         .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
                     System.out.println("That's a weird auto routine... index " + i);
                     break;
                 case "3":
                     autoCommand = autoCommand
-                        .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L3, elevatorAllowEjectTolerance))
-                        .andThen(Commands.print("please please please"))
+                        // .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L3, elevatorAllowEjectTolerance))
+                        .andThen(elevator.runWaitToElevatorPositionDealgae(ElevatorPosition.L2, ElevatorPosition.L3, elevatorAllowEjectTolerance))
                         .andThen(elevator.runEjectScore())
                         .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
                     System.out.println("That's a weird auto routine... index " + i);
@@ -322,7 +345,12 @@ public class Autos {
                         case "3":
                             autoCommand = autoCommand
                                 .andThen(followTrajectory)
-                                .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L3, elevatorAllowEjectTolerance))
+                                // .andThen(elevator.runWaitToElevatorPosition(ElevatorPosition.L3, elevatorAllowEjectTolerance))
+                                .andThen(character.equals("B") || character.equals("D") || character.equals("F") || character.equals("H") || character.equals("J") || character.equals("L") ?
+                                    elevator.runWaitToElevatorPositionDealgae(ElevatorPosition.L2, ElevatorPosition.L3, elevatorAllowEjectTolerance) :
+                                    elevator.runWaitToElevatorPosition(ElevatorPosition.L3, elevatorAllowEjectTolerance)
+                                )
+                                // .andThen(elevator.runWaitToElevatorPositionDealgae(ElevatorPosition.L2, ElevatorPosition.L3, elevatorAllowEjectTolerance))
                                 .andThen(elevator.runEjectScore())
                                 .andThen(elevator.runWaitUntilSafeToMove(elevatorAllowMovementTolerance));
                             i++;

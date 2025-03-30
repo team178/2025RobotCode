@@ -15,11 +15,18 @@ public class FollowTrajectory extends Command {
     private Timer timer;
     private SwerveDrive swerveDrive;
     private Trajectory<SwerveSample> trajectory;
+    private Optional<SwerveSample> finalSample;
+
+    private double lastTimeLeftEndPose;
     
     public FollowTrajectory(SwerveDrive swerveDrive, Trajectory<SwerveSample> trajectory) {
         timer = new Timer();
         this.swerveDrive = swerveDrive;
         this.trajectory = Constants.isRed() ? Autos.getRedTrajectory(trajectory) : trajectory;
+        finalSample = trajectory.getFinalSample(false);
+
+        lastTimeLeftEndPose = 0;
+
         addRequirements(swerveDrive);
     }
 
@@ -33,22 +40,28 @@ public class FollowTrajectory extends Command {
         Optional<SwerveSample> optionalSample = trajectory.sampleAt(timer.get(), false);
         if(optionalSample.isPresent()) swerveDrive.followSwerveSample(optionalSample.get());
         else swerveDrive.runChassisSpeeds(new ChassisSpeeds(0, 0, 0), true, true);
+
+        if(timer.get() < trajectory.getTotalTime() + 0.1 ||
+            finalSample.isEmpty() ||
+            Math.abs(finalSample.get().x - swerveDrive.getPose().getX()) > 0.01 ||
+            Math.abs(finalSample.get().y - swerveDrive.getPose().getY()) > 0.01 ||
+            Math.abs(finalSample.get().heading - swerveDrive.getPose().getRotation().getRadians()) > 0.01
+        ) {
+            lastTimeLeftEndPose = timer.get();
+        }
     }
 
     @Override
     public void end(boolean interrupted) {
         swerveDrive.runChassisSpeeds(new ChassisSpeeds(0, 0, 0), true, true);
+        swerveDrive.toXPosition(true);
+        System.out.println("Trajectory end");
     }
 
     @Override
     public boolean isFinished() {
-        Optional<SwerveSample> finalSample = trajectory.getFinalSample(false);
         if(finalSample.isPresent()) {
-            return (timer.get() > trajectory.getTotalTime() + 3 ||
-                (timer.get() > trajectory.getTotalTime() + 0.3 &&
-                Math.abs(finalSample.get().x - swerveDrive.getPose().getX()) < 0.01 &&
-                Math.abs(finalSample.get().y - swerveDrive.getPose().getY()) < 0.01 &&
-                Math.abs(finalSample.get().heading - swerveDrive.getPose().getRotation().getRadians()) < 0.01));
+            return (timer.get() > trajectory.getTotalTime() + 3 || timer.get() > lastTimeLeftEndPose + 0.5);
         }
         return timer.get() > trajectory.getTotalTime() + 2;
     }

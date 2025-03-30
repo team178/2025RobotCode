@@ -127,6 +127,7 @@ public class Elevator extends SubsystemBase {
     public Command runToElevatorPosition(ElevatorPosition position) {
         return runOnce(() -> {
             openLoop = false;
+
             if(intaking) {
                 desiredLeftVolts = 0;
                 desiredRightVolts = 0;
@@ -137,6 +138,26 @@ public class Elevator extends SubsystemBase {
             }
             elevatorIO.setElevatorPosition(position);
         });
+    }
+
+    public Command runTeleopToElevatorPosition(ElevatorPosition position) {
+        return runOnce(() -> {
+            openLoop = false;
+
+            // if(intaking) {
+            //     desiredLeftVolts = 0;
+            //     desiredRightVolts = 0;
+            //     // elevatorIO.setEffectorVolts(0, 0);
+            //     // elevatorIO.setFunnelMotorVolts(0);
+            //     desiredFunnelVolts = 0;
+            //     intaking = false;
+            // }
+            // elevatorIO.setElevatorPosition(position);
+
+            if(position.equals(ElevatorPosition.HOME) || !intaking) {
+                elevatorIO.setElevatorPosition(position);
+            }
+        }).andThen(runWaitStopIntake());
     }
 
     public Command runJogElevatorPosition(double bump) {
@@ -221,7 +242,27 @@ public class Elevator extends SubsystemBase {
     public Command runWaitToElevatorPosition(ElevatorPosition position, double tolerance) {
         return runToElevatorPosition(position)
             .andThen(new WaitUntilCommand(() -> Math.abs(position.height - elevatorIOInputs.elevatorHeight) < tolerance))
-            .andThen(Commands.print("Done waiting"));
+            .andThen(Commands.print("Done waiting 0"))
+            .andThen(new WaitCommand(0.5))
+            .andThen(Commands.print("Done waiting 1"));
+    }
+
+    /**
+     * Moves elevator up, waits until elevator is (almost) at position, expels coral, waits until it's placed, stops end effector, then lowers elevator.
+     * @param position Elevator height to raise elevator to and score at.
+     * @return Command Group representing the full scoring movement.
+     */
+    public Command runWaitToElevatorPositionDealgae(ElevatorPosition position1, ElevatorPosition position2, double tolerance) {
+        return runToElevatorPosition(position1)
+            .andThen(new WaitUntilCommand(() -> Math.abs(position1.height - elevatorIOInputs.elevatorHeight) < tolerance))
+            .andThen(Commands.print("Done waiting 0"))
+            .andThen(new WaitCommand(0.4))
+            .andThen(Commands.print("Done waiting 1"))
+            .andThen(runToElevatorPosition(position2))
+            .andThen(new WaitUntilCommand(() -> Math.abs(position2.height - elevatorIOInputs.elevatorHeight) < tolerance))
+            .andThen(Commands.print("Done waiting 2"))
+            .andThen(new WaitCommand(0.3))
+            .andThen(Commands.print("Done waiting 3"));
     }
 
     public Command runEjectScore() {
@@ -235,12 +276,14 @@ public class Elevator extends SubsystemBase {
                 desiredRightVolts = 3;
             }
         }))
-            // (!elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1)) ? (runEffector(-4, 4)) : (runEffector(-6, 3)))
-        .andThen(Commands.print("please please please again " + desiredLeftVolts + " " + desiredRightVolts))
+        // return (!elevatorIOInputs.desiredPosition.equals(ElevatorPosition.L1)) ? (runEffector(-4, 4)) : (runEffector(-6, 3))
+            .andThen(Commands.print("zero"))
             .andThen(new WaitUntilCommand(() -> !getLowerPhotosensor()))
+            .andThen(Commands.print("one"))
             .andThen(new WaitCommand(0.1)) // TODO may want to look at tweaking the time here
-            .andThen(Commands.print("uh oh stop " + desiredLeftVolts + " " + desiredRightVolts))
+            .andThen(Commands.print("two"))
             .andThen(runEffector(0, 0))
+            .andThen(Commands.print("three"))
             .andThen(runToElevatorPosition(ElevatorPosition.HOME));
     }
 
@@ -249,7 +292,7 @@ public class Elevator extends SubsystemBase {
      * @return The appropriate WaitUntilCommand
      */
     public Command runWaitUntilSafeToMove(double tolerance) {
-        return new WaitUntilCommand(() -> Math.abs(ElevatorPosition.HOME.height - elevatorIOInputs.elevatorHeight) < tolerance);
+        return new WaitUntilCommand(() -> Math.abs(elevatorIOInputs.desiredHeight - elevatorIOInputs.elevatorHeight) < tolerance);
     }
 
     /**
@@ -376,7 +419,7 @@ public class Elevator extends SubsystemBase {
             lastLowerPhotosensorTrigger = Timer.getFPGATimestamp();
         }
 
-        if(Timer.getFPGATimestamp() - lastUpperPhotosensorTrigger < 0.5 && !elevatorIOInputs.lowerPhotosensor) {
+        if(DriverStation.isAutonomous() && Timer.getFPGATimestamp() - lastUpperPhotosensorTrigger < 0.5 && !elevatorIOInputs.lowerPhotosensor) {
             elevatorIO.setFunnelMotorVolts(Timer.getFPGATimestamp() % 6 > 1.5 && Timer.getFPGATimestamp() % 1.5 > 0.75 ? -desiredFunnelVolts : desiredFunnelVolts);
         } else {
             elevatorIO.setFunnelMotorVolts(desiredFunnelVolts);
@@ -394,7 +437,7 @@ public class Elevator extends SubsystemBase {
         if(
             awaitingScoreCombo &&
             !elevatorIOInputs.desiredPosition.equals(ElevatorPosition.HOME) &&
-            Timer.getFPGATimestamp() - lastLowerPhotosensorTrigger > 0.3 &&
+            Timer.getFPGATimestamp() - lastLowerPhotosensorTrigger > 0.9 &&
             Math.abs(realDesiredHeight - elevatorIOInputs.elevatorHeight) < 0.0015
         ) {
             awaitingScoreCombo = false;
